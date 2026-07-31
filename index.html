@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>batsignal.js demo</title>
+  <style>
+    body {
+      background-color: hsl(202 100% 10% / 100%);
+      color: hsl(44 30% 70% / 100%);
+      font-family: system-ui, sans-serif;
+    }
+
+    a {
+      color: hsl(44 30% 70% / 100%);
+    }
+  </style>
+  <script>
+    window.store = new Proxy({}, {
+      set(o, k, v) {
+        if (k === 'xyz') $('#output2').innerText = v.length;
+        return Reflect.set(o, k, v);
+      }
+    })
+  </script>
+</head>
+
+<body>
+  <h1>batsignal.js demo</h1>
+  <div on:load="console.log(el)">
+    <h2>on:click</h2>
+    <a href="#top" on:load on:click="alert(42)">Get the answer</a>
+
+    <h2>@listen</h2>
+    <br><input type="text" id="input1" on:load on:input="console.log(el.value)" placeholder="Type something...">
+    <br><output on:load="@listen('#input1', 'input', (evt) => {el.innerText = evt.target.value.toUpperCase()})"></output>
+
+    <h2>on:value</h2>
+    <br><input type="text" on:load on:value="store.xyz = el.value" placeholder="Type something...">
+    <br><output id="output2"></output>
+  </div>
+  <script src="./batsignal.js"></script>
+</body>
+
+</html>
