@@ -1,46 +1,195 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-
 <head>
-  <meta charset="UTF-8">
+  <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>batsignal.js demo</title>
   <style>
+    * { box-sizing: border-box; }
     body {
-      background-color: hsl(202 100% 10% / 100%);
-      color: hsl(44 30% 70% / 100%);
-      font-family: system-ui, sans-serif;
+      min-height: 100vh;
+      margin: 0;
+      padding: 2rem 1rem;
+      background: linear-gradient(135deg, #0a1929 0%, #132f4c 100%);
+      color: #e8d7b3;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+      line-height: 1.6;
     }
-
-    a {
-      color: hsl(44 30% 70% / 100%);
+    .container { max-width: 900px; margin: 0 auto; }
+    header {
+      margin-bottom: 3rem;
+      padding-bottom: 2rem;
+      border-bottom: 2px solid rgb(232 215 179 / .2);
+      text-align: center;
+    }
+    h1 {
+      margin: 0 0 .5rem;
+      background: linear-gradient(120deg, #ffd89b, #e8d7b3);
+      background-clip: text;
+      color: transparent;
+      font-size: 2.5rem;
+    }
+    h2 {
+      margin: 0 0 1.5rem;
+      padding-bottom: .5rem;
+      border-bottom: 2px solid rgb(255 216 155 / .3);
+      color: #ffd89b;
+      font-size: 1.5rem;
+    }
+    p { margin: .75rem 0; }
+    a { color: #ffd89b; }
+    .tagline { color: rgb(232 215 179 / .7); font-size: 1.1rem; }
+    .github {
+      display: inline-block;
+      margin-top: 1rem;
+      padding: .5rem 1rem;
+      border: 1px solid rgb(232 215 179 / .3);
+      border-radius: 4px;
+      background: rgb(232 215 179 / .1);
+      color: #e8d7b3;
+      text-decoration: none;
+    }
+    .github:hover { background: rgb(232 215 179 / .2); }
+    section {
+      margin: 2rem 0;
+      padding: 2rem;
+      border: 1px solid rgb(232 215 179 / .1);
+      border-radius: 8px;
+      background: rgb(0 0 0 / .3);
+    }
+    button, input {
+      margin: .25rem 0;
+      padding: .7rem;
+      border: 1px solid rgb(232 215 179 / .2);
+      border-radius: 4px;
+      font: inherit;
+    }
+    input {
+      width: 100%;
+      background: rgb(232 215 179 / .05);
+      color: #e8d7b3;
+    }
+    button {
+      margin-right: .5rem;
+      border: 0;
+      background: linear-gradient(120deg, #ffd89b, #e8d7b3);
+      color: #0a1929;
+      cursor: pointer;
+      font-weight: 600;
+    }
+    button:hover { box-shadow: 0 4px 12px rgb(255 216 155 / .3); transform: translateY(-2px); }
+    output {
+      display: block;
+      min-height: 2rem;
+      margin-top: .8rem;
+      padding: 1rem;
+      border-left: 3px solid #ffd89b;
+      border-radius: 4px;
+      background: rgb(19 47 76 / .5);
+      color: #ffd89b;
+      font-family: Monaco, "Courier New", monospace;
+    }
+    footer {
+      padding-top: 2rem;
+      border-top: 2px solid rgb(232 215 179 / .2);
+      color: rgb(232 215 179 / .6);
+      text-align: center;
     }
   </style>
   <script>
-    window.store = new Proxy({}, {
-      set(o, k, v) {
-        if (k === 'xyz') $('#output2').innerText = v.length;
-        return Reflect.set(o, k, v);
-      }
-    })
+    window.store = new Proxy({count: 0}, {
+      set(object, key, value) {
+        Reflect.set(object, key, value);
+        if (key === 'count') document.querySelector('#count').textContent = value;
+        if (key === 'name') document.querySelector('#name-output').textContent = value || '(empty)';
+        return true;
+      },
+    });
   </script>
 </head>
-
 <body>
-  <h1>batsignal.js demo</h1>
-  <div on:load="console.log(el)">
-    <h2>on:click</h2>
-    <a href="#top" on:load on:click="alert(42)">Get the answer</a>
+  <div class="container">
+    <header>
+      <h1>🦇 batsignal.js</h1>
+      <p class="tagline">Lightweight reactive HTML with server-sent events</p>
+      <a class="github" href="https://github.com/jhthorsen/batsignal.js">View on GitHub →</a>
+    </header>
 
-    <h2>@listen</h2>
-    <br><input type="text" id="input1" on:load on:input="console.log(el.value)" placeholder="Type something...">
-    <br><output on:load="@listen('#input1', 'input', (evt) => {el.innerText = evt.target.value.toUpperCase()})"></output>
+    <section>
+    <h2><code>on:click</code></h2>
+    <p>Every interactive element includes <code>on:load</code>, which makes batsignal initialize it.</p>
+    <button on:load on:click="store.count--">-</button>
+    <button on:load on:click="store.count++">+</button>
+    <button on:load on:click="store.count = 0">Reset</button>
+    <output id="count">0</output>
+    </section>
 
-    <h2>on:value</h2>
-    <br><input type="text" on:load on:value="store.xyz = el.value" placeholder="Type something...">
-    <br><output id="output2"></output>
+    <section>
+    <h2><code>on:value</code></h2>
+    <label>
+      Your name
+      <input on:load on:value="store.name = el.value" placeholder="Type here">
+    </label>
+    <output id="name-output">(empty)</output>
+    </section>
+
+    <section>
+    <h2><code>@listen</code></h2>
+    <label>
+      Live echo
+      <input id="echo-input" placeholder="Type here">
+    </label>
+    <output on:load="@listen('#echo-input', 'input', evt => {el.textContent = evt.target.value})">(waiting)</output>
+    </section>
+
+    <section>
+    <h2><code>@dispatch</code></h2>
+    <button on:load on:click="@dispatch(document, 'demo-message', {detail: 'Hello from a CustomEvent'})">
+      Dispatch event
+    </button>
+    <output on:load="@listen(document, 'demo-message', evt => {el.textContent = evt.detail})">(waiting)</output>
+    </section>
+
+    <section>
+    <h2><code>$()</code></h2>
+    <p><code>$()</code> is a short alias for <code>document.querySelector()</code>.</p>
+    <button on:load on:click="$('.status').textContent = 'Updated at ' + new Date().toLocaleTimeString()">
+      <span class="status">Click to update this text</span>
+    </button>
+    </section>
+
+    <section id="navigation-demo">
+    <h2>Links and forms</h2>
+    <p>
+      These use batsignal's document-level navigation handlers. They request
+      this static page again, so they also work on GitHub Pages.
+    </p>
+
+    <p>
+      <a href="?link-demo=clicked#navigation-demo">Follow this link</a>
+    </p>
+
+    <form action="." method="get">
+      <label>
+        Message
+        <input name="form-demo" placeholder="Send with GET">
+      </label>
+      <button type="submit">Submit form</button>
+    </form>
+
+    <output id="navigation-result" on:load="
+      const params = new URLSearchParams(location.search);
+      const link = params.get('link-demo');
+      const message = params.get('form-demo');
+      el.textContent = link ? 'Link request completed.' : message ? `Form request completed: ${message}` : 'Try the link or form.';
+    ">Try the link or form.</output>
+    </section>
+
+    <footer>
+      <p>Read the <a href="README.md" target="_blank">README</a> for navigation, forms, HTML patches, and SSE.</p>
+      <p>MIT License © 2026 Jan Henning Thorsen</p>
+    </footer>
   </div>
   <script src="./batsignal.js"></script>
 </body>
-
 </html>
