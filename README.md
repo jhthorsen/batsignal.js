@@ -1,10 +1,38 @@
-# batsignal.js
+# 🦇 batsignal.js
 
-A small browser script for declarative DOM events, navigation, forms, and
-HTML/SSE responses.
+[batsignal.js](https://jhthorsen.github.io/batsignal.js) is an alternative to [htmx](https://htmx.org) and [datastar](https://data-star.dev) that provides many of the same features, but focuses on plug-and-play interactions instead of requiring `x-` or `data-` attributes for common cases. Pairing batsignal.js with [pico.css](https://picocss.com/) makes HTML clean and easy to work with.
+
+This project is especially suitable for backend developers who do not want to maintain a large full-stack Node.js framework, but still want to add interactivity to server-rendered pages without writing much JavaScript. Full-stack and frontend developers can also benefit from batsignal.js's simplicity and hackability, adapting it to their needs without extra bloat.
+
+## Quick start
+
+Place the selected scripts immediately before the closing `</body>` tag. Idiomorph is optional, but must load before batsignal.js.
 
 ```html
-<script src="./batsignal.js"></script>
+<!-- Optional: enables DOM morphing -->
+<script src="https://unpkg.com/idiomorph@0.7.4"></script>
+```
+
+Choose one batsignal.js source:
+
+```html
+<!-- Development: main can contain breaking changes -->
+<script src="https://cdn.jsdelivr.net/gh/jhthorsen/batsignal.js@main/batsignal.js"></script>
+```
+
+```html
+<!-- Pinned: use a fixed revision until versioned releases are available -->
+<script src="https://cdn.jsdelivr.net/gh/jhthorsen/batsignal.js@2eb667d4b35e3f562279a50d026811e51f0173b1/batsignal.js"></script>
+```
+
+[Idiomorph](https://github.com/bigskysoftware/idiomorph) is a JavaScript library for morphing one DOM tree to another. It makes replacing nodes slower, but it makes the user experience much better: For example, text selection and focused input are remembered.
+
+With batsignal.js loaded, this button is interactive and the same-origin link is
+fetched without a full reload; an HTML response patches the current document:
+
+```html
+<button on:load on:click="alert('Hello')">Hello</button>
+<a href="/user/profile">View profile</a>
 ```
 
 ## Initialization
@@ -101,7 +129,7 @@ Response handling depends on `Content-Type`:
 | --- | --- |
 | `text/html` | `sse-patch-elements` with `{data, url}` |
 | a type containing `json` | `sse-message` with `{data, url}`; `data` is response text, not parsed JSON |
-| exactly `text/event-stream` | `sse-<event>` with `{data, url}` for each SSE message |
+| `text/event-stream` (parameters allowed) | `sse-<event>` with `{data, url}` for each SSE message, or `sse-message` when no event is specified |
 | anything else | `sse-unknown` with `{response, url}` |
 
 Errors dispatch `sse-error` with `{error, options, url}`. The built-in retry
