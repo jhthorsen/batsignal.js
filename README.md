@@ -184,9 +184,9 @@ The content is evaluated as JavaScript. Only serve trusted documents.
 ## GitHub Pages
 
 This repository's `index.html` is a client-side demo and can be served directly
-from GitHub Pages. It does not demonstrate requests, patches, or SSE because
-GitHub Pages has no application server. Enable Pages from the repository root
-in **Settings → Pages**.
+from GitHub Pages. Its overall functionality test exercises links, GET forms,
+and HTML partial patches using static files in `tests/`. Enable Pages from the
+repository root in **Settings → Pages**.
 
 ## Security
 

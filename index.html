@@ -6,12 +6,15 @@
   <title>batsignal.js demo</title>
   <style>
     * { box-sizing: border-box; }
+    html,
     body {
-      min-height: 100vh;
-      margin: 0;
-      padding: 2rem 1rem;
       background: linear-gradient(135deg, #0a1929 0%, #132f4c 100%);
       color: #e8d7b3;
+      min-height: 100vh;
+      margin: 0;
+    }
+    body {
+      padding: 2rem 1rem;
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
       line-height: 1.6;
     }
@@ -89,6 +92,9 @@
       color: #ffd89b;
       font-family: Monaco, "Courier New", monospace;
     }
+    output[data-state="passed"] { border-color: #8fdb8f; color: #b9f6b9; }
+    output[data-state="failed"] { border-color: #ff9292; color: #ffd0d0; }
+    #demo-test-result { white-space: pre-line; }
     footer {
       padding-top: 2rem;
       border-top: 2px solid rgb(232 215 179 / .2);
@@ -97,7 +103,7 @@
     }
   </style>
   <script>
-    window.store = new Proxy({count: 0}, {
+    window.store = window.store || new Proxy({count: 0}, {
       set(object, key, value) {
         Reflect.set(object, key, value);
         if (key === 'count') document.querySelector('#count').textContent = value;
@@ -105,6 +111,102 @@
         return true;
       },
     });
+
+    window.demoTestBase = location.href;
+    window.addEventListener('DOMContentLoaded', () => {
+      document.querySelector('#navigation-link').href = new URL('tests/link.html', window.demoTestBase).href;
+      document.querySelector('#navigation-form').action = new URL('tests/form.html', window.demoTestBase).href;
+    });
+    window.runDemoTest = async (button) => {
+      let result = document.querySelector('#demo-test-result');
+      const waitForPatch = (matches, description) => new Promise((resolve, reject) => {
+        const timeout = setTimeout(() => {
+          window.removeEventListener('sse-patch-elements', onPatch);
+          reject(new Error(`Timed out waiting for ${description}`));
+        }, 5000);
+        const onPatch = (event) => {
+          if (!matches(event.detail.url)) return;
+          clearTimeout(timeout);
+          window.removeEventListener('sse-patch-elements', onPatch);
+          resolve();
+        };
+        window.addEventListener('sse-patch-elements', onPatch);
+      });
+
+      button.disabled = true;
+      result.dataset.state = '';
+      result.textContent = 'Running tests...';
+      try {
+        const passed = [];
+        const pass = (name) => passed.push(`${name}: passed`);
+
+        const count = document.querySelector('#count');
+        const previousCount = Number(count.textContent);
+        document.querySelector('#counter-increment').click();
+        if (Number(count.textContent) !== previousCount + 1) throw new Error('on:click did not update the counter.');
+        pass('on:click');
+
+        const nameInput = document.querySelector('#name-input');
+        nameInput.value = 'Batsignal test';
+        nameInput.dispatchEvent(new Event('input', {bubbles: true}));
+        if (document.querySelector('#name-output').textContent !== 'Batsignal test') throw new Error('on:value did not update the name.');
+        pass('on:value');
+
+        const echoInput = document.querySelector('#echo-input');
+        echoInput.value = 'Batsignal test';
+        echoInput.dispatchEvent(new Event('input', {bubbles: true}));
+        if (document.querySelector('#echo-output').textContent !== 'Batsignal test') throw new Error('@listen did not receive the input event.');
+        pass('@listen');
+
+        document.querySelector('#dispatch-button').click();
+        if (document.querySelector('#dispatch-output').textContent !== 'Hello from a CustomEvent') throw new Error('@dispatch did not deliver the custom event.');
+        pass('@dispatch');
+
+        document.querySelector('#dollar-button').click();
+        if (!document.querySelector('.status').textContent.startsWith('Updated at ')) throw new Error('$() did not select the status element.');
+        pass('$()');
+
+        const link = document.querySelector('#navigation-link');
+        const linkUrl = new URL(link.href);
+        const linkPatch = waitForPatch(url => url === linkUrl.pathname, 'the link response');
+        link.click();
+        await linkPatch;
+        if (document.querySelector('#navigation-result').dataset.test !== 'link-passed') throw new Error('Link response was not patched.');
+        pass('Link click and partial patch');
+
+        result = document.querySelector('#demo-test-result');
+        const form = document.querySelector('#navigation-form');
+        const formUrl = new URL(form.action);
+        const formPatch = waitForPatch(url => new URL(url, window.demoTestBase).pathname === formUrl.pathname, 'the form response');
+        form.requestSubmit();
+        await formPatch;
+        const navigationResult = document.querySelector('#navigation-result');
+        if (navigationResult.dataset.test !== 'form-passed' || navigationResult.dataset.initialized !== 'true') throw new Error('Form response was not patched and initialized.');
+        pass('Form submit, partial patch, and initialization');
+
+        const store = window.store;
+        const persistedCount = store.count;
+        const persistedName = store.name;
+        const reloadLink = document.querySelector('#reload-link');
+        const reloadUrl = new URL(reloadLink.href);
+        const reloadPatch = waitForPatch(url => url === reloadUrl.pathname, 'the index.html response');
+        reloadLink.click();
+        await reloadPatch;
+        if (window.store !== store || window.store.count !== persistedCount || window.store.name !== persistedName) throw new Error('window.store did not persist after loading index.html.');
+        if (document.querySelector('#count').textContent !== String(persistedCount) || document.querySelector('#name-input').value !== persistedName) throw new Error('Persisted store values were not restored in the page.');
+        pass('index.html reload and window.store persistence');
+
+        result = document.querySelector('#demo-test-result');
+        result.dataset.state = 'passed';
+        result.textContent = passed.join('\n');
+      } catch (error) {
+        result = document.querySelector('#demo-test-result');
+        result.dataset.state = 'failed';
+        result.textContent = `Test failed: ${error.message}`;
+      } finally {
+        button.disabled = false;
+      }
+    };
   </script>
 </head>
 <body>
@@ -119,16 +221,16 @@
     <h2><code>on:click</code></h2>
     <p>Every interactive element includes <code>on:load</code>, which makes batsignal initialize it.</p>
     <button on:load on:click="store.count--">-</button>
-    <button on:load on:click="store.count++">+</button>
+    <button id="counter-increment" on:load on:click="store.count++">+</button>
     <button on:load on:click="store.count = 0">Reset</button>
-    <output id="count">0</output>
+    <output id="count" on:load="el.textContent = store.count">0</output>
     </section>
 
     <section>
     <h2><code>on:value</code></h2>
     <label>
       Your name
-      <input on:load on:value="store.name = el.value" placeholder="Type here">
+      <input id="name-input" on:load="el.value = store.name || ''" on:value="store.name = el.value" placeholder="Type here">
     </label>
     <output id="name-output">(empty)</output>
     </section>
@@ -139,21 +241,21 @@
       Live echo
       <input id="echo-input" placeholder="Type here">
     </label>
-    <output on:load="@listen('#echo-input', 'input', evt => {el.textContent = evt.target.value})">(waiting)</output>
+    <output id="echo-output" on:load="@listen('#echo-input', 'input', evt => {el.textContent = evt.target.value})">(waiting)</output>
     </section>
 
     <section>
     <h2><code>@dispatch</code></h2>
-    <button on:load on:click="@dispatch(document, 'demo-message', {detail: 'Hello from a CustomEvent'})">
+    <button id="dispatch-button" on:load on:click="@dispatch(document, 'demo-message', {detail: 'Hello from a CustomEvent'})">
       Dispatch event
     </button>
-    <output on:load="@listen(document, 'demo-message', evt => {el.textContent = evt.detail})">(waiting)</output>
+    <output id="dispatch-output" on:load="@listen(document, 'demo-message', evt => {el.textContent = evt.detail})">(waiting)</output>
     </section>
 
     <section>
     <h2><code>$()</code></h2>
     <p><code>$()</code> is a short alias for <code>document.querySelector()</code>.</p>
-    <button on:load on:click="$('.status').textContent = 'Updated at ' + new Date().toLocaleTimeString()">
+    <button id="dollar-button" on:load on:click="$('.status').textContent = 'Updated at ' + new Date().toLocaleTimeString()">
       <span class="status">Click to update this text</span>
     </button>
     </section>
@@ -162,14 +264,17 @@
     <h2>Links and forms</h2>
     <p>
       These use batsignal's document-level navigation handlers. They request
-      this static page again, so they also work on GitHub Pages.
+      static partial responses, so they also work on GitHub Pages.
     </p>
 
     <p>
-      <a href="?link-demo=clicked#navigation-demo">Follow this link</a>
+      <a id="navigation-link" href="tests/link.html" data-history="none">Follow this link</a>
+    </p>
+    <p>
+      <a id="reload-link" href="index.html" data-history="none">Load index.html again</a>
     </p>
 
-    <form action="." method="get">
+    <form id="navigation-form" action="tests/form.html" method="get" data-history="none">
       <label>
         Message
         <input name="form-demo" placeholder="Send with GET">
@@ -177,12 +282,14 @@
       <button type="submit">Submit form</button>
     </form>
 
-    <output id="navigation-result" on:load="
-      const params = new URLSearchParams(location.search);
-      const link = params.get('link-demo');
-      const message = params.get('form-demo');
-      el.textContent = link ? 'Link request completed.' : message ? `Form request completed: ${message}` : 'Try the link or form.';
-    ">Try the link or form.</output>
+    <output id="navigation-result">Try the link or form.</output>
+    </section>
+
+    <section>
+    <h2>Overall functionality test</h2>
+    <p>Clicks the link and submits the form above, then verifies their DOM patches.</p>
+    <button on:load on:click="runDemoTest(el)">Run overall test</button>
+    <output id="demo-test-result">Ready to run.</output>
     </section>
 
     <footer>
