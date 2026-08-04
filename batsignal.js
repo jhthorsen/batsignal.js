@@ -293,7 +293,7 @@
 
     const [u, b, r] = [new URL(el.getAttribute('action'), L.href), new FormData(el), {method: el.method}]
     const $s = evt.submitter
-    if ($s.name) b.append($s.name, $s.value)
+    if ($s && $s.name) b.append($s.name, $s.value)
 
     const m = el.dataset.history || 'pushState'
     if (r.method.toLowerCase() == 'post') {
