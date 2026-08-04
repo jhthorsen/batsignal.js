@@ -103,7 +103,7 @@
         dispatch(el, 'sse-patch-elements', {bubbles: true, detail: {data: await r.text(), url}})
       } else if (ct.match(/\bjson\b/)) {
         dispatch(el, 'sse-message', {bubbles: true, detail: {data: await r.text(), url}})
-      } else if (ct == 'text/event-stream') {
+      } else if (ct.startsWith('text/event-stream')) {
         const decoder = new TextDecoder('utf-8'), reader = r.body.getReader()
         let buf = '', sse = {}
         for (;;) {
