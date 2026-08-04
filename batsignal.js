@@ -3,16 +3,6 @@
   // $w: window, $d: document, H: history, I: Idiomorph, L: location URL
 
   /**
-   * Monkey-patches history.pushState and history.replaceState so that `L`
-   * (the last-fetched URL) stays in sync regardless of which code calls them,
-   * including third-party libraries.
-   */
-  ;['pushState', 'replaceState'].forEach(m => {
-    const o = H[m].bind(H)
-    H[m] = (s, t, u) => { o(s, t, u); u && (L = new URL(u, L.href)) }
-  })
-
-  /**
    * DOM node selector utility. Will use querySelectorAll() if a callback
    * is provided, otherwise querySelector().
    * @param {Element} parent - Parent element to search within.
@@ -153,12 +143,14 @@
       if (el._I) return
       el._I = true
 
-      for (const attr of el.attributes) {
-        const name = attr.name.replace(/^on:/, '')
-        if (attr.name == 'on:load') {
-          compile(el, attr.value)()
-        } else if (attr.name == 'on:value') {
-          const handler = compile(el, attr.value)
+      for (const a of el.attributes) {
+        const event = a.name.replace(/^on:/, '')
+        if (event == a.name) continue;
+
+        const handler = compile(el, a.value)
+        if (event == 'load') {
+          handler()
+        } else if (event == 'value') {
           if (el.tagName == 'SELECT' || el.type == 'checkbox' || el.type == 'radio') {
             listen(el, el, 'change', handler)
           } else if (el.tagName == 'INPUT' || el.tagName == 'TEXTAREA') {
@@ -171,8 +163,8 @@
           })
 
           handler()
-        } else if (name != attr.name) {
-          listen(el, el, name, compile(el, attr.value))
+        } else {
+          listen(el, el, event, handler)
         }
       }
     })
@@ -198,10 +190,12 @@
     return cleanup
   }
 
+  // Retris failed fetch() requests after 3 seconds unless defaultPrevented is true
   listen($w, $w, 'sse-error', ({detail: {options: o, url}, defaultPrevented: d, target}) => {
     if (!d && o.method == 'GET') setTimeout(() => target.parentNode && fetch(target, url, o), 3000)
   })
 
+  // Parses HTML responses and swaps elements in the DOM based on data-swap attributes.
   listen($w, $w, 'sse-patch-elements', ({detail: {data, url}}) => {
     function destroy(el) {
       if (el.dataset.preserve != undefined) return
@@ -210,6 +204,7 @@
       ;['_C'].forEach(k => delete el[k])
     }
 
+    // Swaps elements in the DOM based on data-swap attributes.
     function swapElements(parent) {
       $(parent, '[data-swap]', (newEl) => {
         if (newEl.dataset.swap == 'none') return
@@ -220,6 +215,7 @@
       })
     }
 
+    // Swaps <script> and <style> elements from the parsed HTML into the document head.
     function scriptAndStyle(parent, url) {
       $(parent, 'style, script', (node) => {
         const el = $d.createElement(node.tagName)
@@ -265,6 +261,7 @@
     init()
   })
 
+  // Listens for click events on links and intercepts them for SPA navigation.
   listen($w, $d, 'click', (evt) => {
     const el = evt.target?.closest('[href]')
     if (evt.defaultPrevented || !el || el.target.startsWith('_')) return // _blank, _top, _self, ...
@@ -280,6 +277,7 @@
     fetch($d.body, url.pathname + url.search, {})
   })
 
+  // Listens for popstate events (back/forward navigation) and fetches the new page content.
   listen($w, $w, 'popstate', () => {
     const O = L
     L = new URL(location.href)
@@ -287,6 +285,7 @@
     fetch($d.body, L.pathname + L.search, {})
   })
 
+  // Listens for form submissions and intercepts them for SPA navigation.
   listen($w, $d, 'submit', (evt) => {
     const el = evt.target?.closest('form')
     if (evt.defaultPrevented || !el || el.target.startsWith('_')) return // _blank, _top, _self, ...
@@ -313,6 +312,12 @@
       el.ariaBusy = 'false'
       if ($s) $s.ariaBusy = 'false'
     })
+  })
+
+  // Monkey-patches history.pushState and history.replaceState so that `L` stays in sync regardless of which code calls them
+  ;['pushState', 'replaceState'].forEach(m => {
+    const o = H[m].bind(H)
+    H[m] = (s, t, u) => { o(s, t, u); u && (L = new URL(u, L.href)) }
   })
 
   init()
