@@ -112,7 +112,9 @@
           buf += decoder.decode(value, {stream: true})
           for (let i; (i = buf.indexOf('\n')) >= 0;) {
             if (i) {
-              const [k, v] = buf.replace(/\r/g, '').slice(0, i).split(/:\s/, 2)
+              const line = buf.replace(/\r/g, '').slice(0, i)
+              const colon = line.indexOf(':')
+              const [k, v] = colon < 0 ? [line, ''] : [line.slice(0, colon), line.slice(colon + 1).replace(/^ /, '')]
               sse[k] ??= ''
               sse[k] += v
             } else {
