@@ -199,6 +199,7 @@
   listen($w, $w, 'sse-patch-elements', ({detail: {data, url}}) => {
     function destroy(el) {
       if (el.dataset.preserve != undefined) return
+      dispatch(el, 'destroy')
       $(el, '[on\\:load]', destroy)
       for (const k in el._C ?? {}) for (const c of el._C[k]) c()
       ;['_C'].forEach(k => delete el[k])

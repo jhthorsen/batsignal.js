@@ -47,6 +47,19 @@ to `on:value` and every other `on:*` handler too. A blank `on:load` is enough:
 `on:load` runs once when batsignal initializes the element. It also runs for
 new elements after a response patches the page.
 
+### `on:destroy`
+
+`on:destroy` runs immediately before batsignal removes or replaces the element
+during an HTML patch. Use it to clean up resources that are not managed by
+batsignal, such as timers or third-party widgets. It does not run when other
+code removes the element from the DOM.
+
+```html
+<div on:load="el.timer = setInterval(refresh, 1000)" on:destroy="clearInterval(el.timer)">
+  Refreshing…
+</div>
+```
+
 ## Event handlers
 
 Once initialized, `on:<event>` adds an event listener to the element. The
