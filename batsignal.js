@@ -111,15 +111,15 @@
           if (done) break
           buf += decoder.decode(value, {stream: true})
           for (let i; (i = buf.indexOf('\n')) >= 0;) {
-            if (i) {
-              const line = buf.replace(/\r/g, '').slice(0, i)
+            const line = buf.slice(0, i).replace(/\r$/, '')
+            if (!line) {
+              if (sse.data != undefined) dispatch(el, 'sse-' + (sse.event ?? 'message'), {bubbles: true, detail: {data: sse.data, url}})
+              sse = {}
+            } else if (!line.startsWith(':')) {
               const colon = line.indexOf(':')
               const [k, v] = colon < 0 ? [line, ''] : [line.slice(0, colon), line.slice(colon + 1).replace(/^ /, '')]
               sse[k] ??= ''
               sse[k] += v
-            } else {
-              dispatch(el, 'sse-' + sse.event, {bubbles: true, detail: {data: sse.data, url}})
-              sse = {}
             }
             buf = buf.slice(i + 1)
           }
