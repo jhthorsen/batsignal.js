@@ -28,7 +28,7 @@
    */
   function compile(el, body) {
     body = body
-      .replace(/\@(get|listen|\$)\(/g, '__b.$1(el,')
+      .replace(/\@(get|listen)\(/g, '__b.$1(el,')
       .replace(/\@(dispatch|fetch)\b/g, '__b.$1')
 
     try {
