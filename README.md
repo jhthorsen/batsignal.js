@@ -6,53 +6,44 @@ This project is especially suitable for backend developers who do not want to ma
 
 ## Quick start
 
-Place the selected scripts immediately before the closing `</body>` tag. Idiomorph is optional, but must load before batsignal.js.
+Place the selected scripts immediately before the closing `</body>` tag.
 
 ```html
-<!-- Optional: enables DOM morphing -->
-<script src="https://unpkg.com/idiomorph@0.7.4"></script>
-```
-
-Choose one batsignal.js source:
-
-```html
+<!-- Idiomorph is a required dependency -->
+<script src="https://unpkg.com/idiomorph@0.7.4/dist/idiomorph.min.js"></script>
 <!-- Development: main can contain breaking changes -->
 <script src="https://cdn.jsdelivr.net/gh/jhthorsen/batsignal.js@main/batsignal.js"></script>
-```
-
-```html
-<!-- Pinned: use a fixed revision until versioned releases are available -->
-<script src="https://cdn.jsdelivr.net/gh/jhthorsen/batsignal.js@2eb667d4b35e3f562279a50d026811e51f0173b1/batsignal.js"></script>
+<!-- Or pin a revision until versioned releases are available:
+<script src="https://cdn.jsdelivr.net/gh/jhthorsen/batsignal.js@be29cca/batsignal.js"></script>
+-->
 ```
 
 [Idiomorph](https://github.com/bigskysoftware/idiomorph) is a JavaScript library for morphing one DOM tree to another. It makes replacing nodes slower, but it makes the user experience much better: For example, text selection and focused input are remembered.
 
-With batsignal.js loaded, this button is interactive and the same-origin link is
-fetched without a full reload; an HTML response patches the current document:
+With batsignal.js loaded, this button is interactive and the same-origin link is fetched without a full reload; an HTML response patches the current document:
 
 ```html
 <button on:load on:click="alert('Hello')">Hello</button>
 <a href="/user/profile">View profile</a>
 ```
 
-## Initialization
+## Event handlers
 
-**An element must have an `on:load` attribute to be initialized.** This applies
-to `on:value` and every other `on:*` handler too. A blank `on:load` is enough:
+Listen for events with the `on:<event>` syntax. In addition to standard events such as `click` and `submit`, batsignal.js provides the special events listed below.
+
+### `on:load`
+
+**An element must have an `on:load` attribute to be initialized.** This applies to `on:value` and every other `on:*` handler too. A blank `on:load` is enough:
 
 ```html
 <button on:load on:click="alert('Hello')">Hello</button>
 ```
 
-`on:load` runs once when batsignal initializes the element. It also runs for
-new elements after a response patches the page.
+`on:load` runs once when batsignal initializes the element. It also runs for new elements after a response patches the page.
 
 ### `on:destroy`
 
-`on:destroy` runs immediately before batsignal removes or replaces the element
-during an HTML patch. Use it to clean up resources that are not managed by
-batsignal, such as timers or third-party widgets. It does not run when other
-code removes the element from the DOM.
+`on:destroy` runs immediately before batsignal removes or replaces the element during an HTML patch. Use it to clean up resources that are not managed by batsignal, such as timers or third-party widgets. It does not run when other code removes the element from the DOM.
 
 ```html
 <div on:load="el.timer = setInterval(refresh, 1000)" on:destroy="clearInterval(el.timer)">
@@ -60,10 +51,7 @@ code removes the element from the DOM.
 </div>
 ```
 
-## Event handlers
-
-Once initialized, `on:<event>` adds an event listener to the element. The
-handler has `el` (the element) and `evt` (the event) in scope.
+Once initialized, `on:<event>` adds an event listener to the element. The handler has `el` (the element) and `evt` (the event) in scope.
 
 ```html
 <input on:load on:input="console.log(el.value)">
@@ -72,10 +60,7 @@ handler has `el` (the element) and `evt` (the event) in scope.
 
 ### `on:value`
 
-`on:value` runs immediately, then on `input` for text inputs and textareas, or
-on `change` for selects, checkboxes, and radio buttons. It also listens for a
-custom `value` event on the element. A defined `event.detail` is assigned to
-`el.value` before the handler runs.
+`on:value` runs immediately, then on `input` for text inputs and textareas, or on `change` for selects, checkboxes, and radio buttons. It also listens for a custom `value` event on the element. A defined `event.detail` is assigned to `el.value` before the handler runs.
 
 ```html
 <input on:load on:value="store.name = el.value">
@@ -126,8 +111,7 @@ like `document.querySelector()`:
 
 ## Requests and responses
 
-Links to the same origin and forms are intercepted. Links use `GET`; forms use
-their declared method. `data-history` controls the history update:
+Links to the same origin and forms are intercepted. Links use `GET`; forms use their declared method. `data-history` controls the history update:
 
 ```html
 <a href="/account">Push a history entry</a>
@@ -135,8 +119,7 @@ their declared method. `data-history` controls the history update:
 <a href="/account" data-history="none">Do not update history</a>
 ```
 
-`fetch()` also aborts an earlier request from the same target to the same URL.
-Response handling depends on `Content-Type`:
+`fetch()` also aborts an earlier request from the same target to the same URL. Response handling depends on `Content-Type`:
 
 | Content-Type | Event |
 | --- | --- |
@@ -145,35 +128,39 @@ Response handling depends on `Content-Type`:
 | `text/event-stream` (parameters allowed) | `sse-<event>` with `{data, url}` for each SSE message, or `sse-message` when no event is specified |
 | anything else | `sse-unknown` with `{response, url}` |
 
-Errors dispatch `sse-error` with `{error, options, url}`. The built-in retry
-listener retries only requests whose `options.method` is exactly `"GET"`.
+Errors dispatch `sse-error` with `{error, options, url}`. The built-in retry listener retries only requests whose `options.method` is exactly `"GET"`.
 
 ### HTML patches
 
-A full HTML document replaces the body (unless the response contains
-`data-swap` elements). A fragment updates elements by id, or can explicitly
-target an element with `data-swap`:
+A full HTML document replaces the body (unless the response contains `data-swap` elements). A fragment updates elements by id, or can explicitly target an element with `data-swap`:
 
 ```html
 <!-- Returned by the server -->
-<div data-swap="innerHTML:#messages">
+<div data-swap="replaceWith:#messages">
   <p>New message</p>
 </div>
 
 <!-- Also supported: replaceWith:#messages and morph:#messages -->
 ```
 
-`morph` uses `window.Idiomorph` when it is available; otherwise it calls the
-named DOM method. Use `data-swap="none"` to ignore a returned element.
+`morph` uses the required `window.Idiomorph` dependency. The following modes control a response element without inserting it:
 
-Elements with `data-preserve` survive a full-document replacement.
-`data-preserve="always"` additionally preserves the matching element while
-applying a fragment.
+```html
+<!-- Discard the returned element without changing the current DOM. -->
+<div data-swap="ignore"></div>
+
+<!-- Retain the current element with the same id. -->
+<div id="editor" data-swap="keep"></div>
+
+<!-- Remove the selected current element. -->
+<template data-swap="remove:#messages"></template>
+```
+
+For a full-document response, `keep` moves the current element into the incoming document. For a fragment response, it discards the incoming element.
 
 ### Headers
 
-To add headers to every batsignal request, the meta tag content is inserted
-inside an object literal. Use object entries, **without outer braces**:
+To add headers to every batsignal request, the meta tag content is inserted inside an object literal. Use object entries, **without outer braces**:
 
 ```html
 <meta name="batsignal-headers" content='"X-Request-ID": "example"'>
@@ -183,17 +170,11 @@ The content is evaluated as JavaScript. Only serve trusted documents.
 
 ## GitHub Pages
 
-This repository's `index.html` is a client-side demo and can be served directly
-from GitHub Pages. Its overall functionality test exercises links, GET forms,
-and HTML partial patches using static files in `tests/`. Enable Pages from the
-repository root in **Settings → Pages**.
+This repository's `index.html` is a client-side demo and can be served directly from GitHub Pages. Its overall functionality test exercises links, GET forms, and HTML partial patches using static files in `tests/`. Enable Pages from the repository root in **Settings → Pages**.
 
 ## Security
 
-Attribute values and `batsignal-headers` are compiled with `new Function()`.
-Never put untrusted input into either location. Batsignal does not sanitize
-HTML received from the server; sanitize user-generated content before sending
-it in an HTML response.
+Attribute values and `batsignal-headers` are compiled with `new Function()`. Never put untrusted input into either location. Batsignal does not sanitize HTML received from the server; sanitize user-generated content before sending it in an HTML response.
 
 ## License
 

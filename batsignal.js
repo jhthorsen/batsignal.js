@@ -1,6 +1,6 @@
-;(function ($w, $d, H, I, L) {
+;(function ($w, $d, H, L) {
   'use strict';
-  // $w: window, $d: document, H: history, I: Idiomorph, L: location URL
+  // $w: window, $d: document, H: history, L: location URL
 
   /**
    * DOM node selector utility. Will use querySelectorAll() if a callback
@@ -197,69 +197,56 @@
 
   // Parses HTML responses and swaps elements in the DOM based on data-swap attributes.
   listen($w, $w, 'sse-patch-elements', ({detail: {data, url}}) => {
+    if (!data) return
+
+    const hasBody = data.indexOf('<body') != -1
+    const dom = hasBody
+      ? new DOMParser().parseFromString(data, 'text/html')
+      : $d.createRange().createContextualFragment(data)
+
+    $(dom, '[data-swap=ignore]', el => el.remove())
+    $(dom, '[data-swap=keep]', b => {
+      const a = b.id && $($d, `#${b.id}`)
+      a ? b.replaceWith(a) : b.remove()
+    })
+
+    const [script, style] = ['script', 'style'].map(sel => $(dom, sel, el => [el, el.remove()][0]))
+    hasBody
+      ? $(dom, 'title', t => $($d, 'title').textContent = t.textContent)
+      : Array.from(dom.children).forEach(el => el.id && !el.dataset.swap && (el.dataset.swap = `morph:#${el.id}`))
+    $($d, '[data-owner]', el => (hasBody || (url && el.dataset.owner == url)) && el.remove())
+    style.forEach(el => $d.head.appendChild([el, (el.dataset.owner = url || '')][0]))
+    hasBody ? (swap(dom) || swapBody(dom)) : swap(dom)
+    script.forEach(el => $d.head.appendChild([el, (el.dataset.owner = url || '')][0]))
+    init()
+
     function destroy(el) {
-      if (el.dataset.preserve != undefined) return
       dispatch(el, 'destroy')
       $(el, '[on\\:load]', destroy)
       for (const k in el._C ?? {}) for (const c of el._C[k]) c()
       ;['_C'].forEach(k => delete el[k])
     }
 
-    // Swaps elements in the DOM based on data-swap attributes.
-    function swapElements(parent) {
-      $(parent, '[data-swap]', (newEl) => {
-        if (newEl.dataset.swap == 'none') return
-        const swap = newEl.dataset.swap.split(':', 2)
-        const oldEl = $($d, swap[1])
-        if (swap[0] == 'morph' || swap[0] == 'replaceWith') destroy(oldEl)
-        I && swap[0] == 'morph' ? I.morph(oldEl, newEl) : oldEl[swap[0]](newEl)
-      })
+    function swap(parsed) {
+      return $(parsed, '[data-swap]', b => {
+        const [m, sel] = b.dataset.swap.split(':', 2)
+        if (m == 'keep') return false
+        const a = $($d, sel || `#${b.id}`)
+        if (m == 'remove') return a && (destroy(a), a.remove())
+        if (m == 'morph' || m == 'replaceWith') destroy(a)
+        m == 'morph' ? Idiomorph.morph(a, b) : a[m](b)
+        return true
+      }).filter(r => r).length > 0
     }
 
-    // Swaps <script> and <style> elements from the parsed HTML into the document head.
-    function scriptAndStyle(parent, url) {
-      $(parent, 'style, script', (node) => {
-        const el = $d.createElement(node.tagName)
-        el.nonce = node.nonce
-        el.dataset.owner = url || el.nonce
-        el.textContent = node.textContent
-        $d.head.appendChild(el)
-        node.remove()
-      })
-    }
-
-    if (!I) I = $w.Idiomorph
-    if (!data) return
-    if (data.lastIndexOf('<body', 4096) != -1) {
-      const parsed = new DOMParser().parseFromString(data, 'text/html')
-      $($d, '[data-owner]', (el) => el.remove())
-      destroy($d.body)
-      scriptAndStyle(parsed, url)
-      $($d, '[data-preserve]', (el) => $(parsed, `#${el.id}`, (newEl) => newEl.replaceWith(el.cloneNode(true))))
-      let titleEl
-      if ((titleEl = $(parsed, 'title'))) $($d, 'title', (oldEl) => oldEl.textContent = titleEl.textContent)
-      if ($(parsed, '[data-swap]')) return swapElements(parsed)
-      if ((titleEl = $(parsed, 'body'))) $d.body.innerHTML = titleEl.innerHTML
+    function swapBody(parsed) {
+      const [a, b] = [$d.body, $(parsed, 'body')]
+      destroy(a)
+      for (const {name} of [...a.attributes]) if (!b.hasAttribute(name)) a.removeAttribute(name)
+      for (const {name, value} of b.attributes) a.setAttribute(name, value)
+      a.replaceChildren(...b.childNodes)
       if (L.hash) $($d, L.hash, el => el.scrollIntoView({behavior: 'auto'}))
-    } else {
-      const fragment = $d.createRange().createContextualFragment(data)
-      if (url.length) $($d, `[data-owner="${url}"]`, (el) => el.remove())
-      scriptAndStyle(fragment, url)
-      $($d, '[data-preserve=always]', (el) => $(fragment, `#${el.id}`, (newEl) => newEl.replaceWith(el.cloneNode(true))))
-      swapElements(fragment)
-      for (const el of fragment.children) {
-        if (el.dataset.swap == 'none') continue
-        const oldEl = el.id && $($d, `#${el.id}`)
-        if (oldEl) {
-          destroy(oldEl)
-          I ? I.morph(oldEl, el) : oldEl.replaceWith(el)
-        } else {
-          console.warn("Can't swap unknown element", el, fragment)
-        }
-      }
     }
-
-    init()
   })
 
   // Listens for click events on links and intercepts them for SPA navigation.
@@ -322,4 +309,4 @@
   })
 
   init()
-})(window, document, history, window.Idiomorph, new URL(location.href))
+})(window, document, history, new URL(location.href))

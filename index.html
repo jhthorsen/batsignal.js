@@ -8,12 +8,13 @@
     * { box-sizing: border-box; }
     html,
     body {
-      background: linear-gradient(135deg, #0a1929 0%, #132f4c 100%);
+      background: #0a1929;
       color: #e8d7b3;
       min-height: 100vh;
       margin: 0;
     }
     body {
+      background: linear-gradient(135deg, #0a1929 0%, #132f4c 100%);
       padding: 2rem 1rem;
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
       line-height: 1.6;
@@ -189,13 +190,17 @@
         const persistedName = store.name;
         const reloadLink = document.querySelector('#reload-link');
         const reloadUrl = new URL(reloadLink.href);
+        const style = document.head.querySelector('style');
+        const ts = document.querySelector('[data-swap=keep]').dataset.ts;
         const reloadPatch = waitForPatch(url => url === reloadUrl.pathname, 'the index.html response');
         reloadLink.click();
         await reloadPatch;
         if (window.store !== store || window.store.count !== persistedCount || window.store.name !== persistedName) throw new Error('window.store did not persist after loading index.html.');
         if (document.querySelector('#count').textContent !== String(persistedCount) || document.querySelector('#name-input').value !== persistedName) throw new Error('Persisted store values were not restored in the page.');
+        if (document.head.querySelector('style') !== style) throw new Error('index.html replaced style in head.');
+        if (document.body.querySelector('script')) throw new Error('index.html inserted script[data-swap=ignore] tag.');
+        if (document.querySelector('[data-swap=keep]').dataset.ts !== ts) throw new Error('index.html replaced data-swap=keep tag.');
         pass('index.html reload and window.store persistence');
-
         result = document.querySelector('#demo-test-result');
         result.dataset.state = 'passed';
         result.textContent = passed.join('\n');
@@ -211,7 +216,9 @@
 </head>
 <body>
   <div class="container">
-    <header>
+    <header id="header" data-swap="keep"
+      on:load="el.dataset.ts=new Date().valueOf()"
+      on:destroy="console.log(el)">
       <h1>🦇 batsignal.js</h1>
       <p class="tagline">Lightweight reactive HTML with server-sent events</p>
       <a class="github" href="https://github.com/jhthorsen/batsignal.js">View on GitHub →</a>
@@ -220,7 +227,7 @@
     <section>
     <h2><code>on:click</code></h2>
     <p>Every interactive element includes <code>on:load</code>, which makes batsignal initialize it.</p>
-    <button on:load on:click="store.count--">-</button>
+    <button on:load on:click="store.count--" on:destroy="console.log(el)">-</button>
     <button id="counter-increment" on:load on:click="store.count++">+</button>
     <button on:load on:click="store.count = 0">Reset</button>
     <output id="count" on:load="el.textContent = store.count">0</output>
@@ -297,6 +304,7 @@
       <p>MIT License © 2026 Jan Henning Thorsen</p>
     </footer>
   </div>
-  <script src="./batsignal.js"></script>
+  <script data-swap="ignore" src="https://unpkg.com/idiomorph@0.7.4/dist/idiomorph.min.js"></script>
+  <script data-swap="ignore" src="./batsignal.js"></script>
 </body>
 </html>
