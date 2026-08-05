@@ -106,13 +106,16 @@
           for (let i; (i = buf.indexOf('\n')) >= 0;) {
             const line = buf.slice(0, i).replace(/\r$/, '')
             if (!line) {
-              if (sse.data != undefined) dispatch(el, 'sse-' + (sse.event ?? 'message'), {bubbles: true, detail: {data: sse.data, url}})
+              if (sse.data != undefined) dispatch(el, 'sse-' + (sse.event ?? 'message'), {bubbles: true, detail: {data: sse.data.slice(0, -1), url}})
               sse = {}
             } else if (!line.startsWith(':')) {
               const colon = line.indexOf(':')
               const [k, v] = colon < 0 ? [line, ''] : [line.slice(0, colon), line.slice(colon + 1).replace(/^ /, '')]
-              sse[k] ??= ''
-              sse[k] += v
+              if (k == 'data') sse.data = (sse.data ?? '') + v + '\n'
+              else {
+                sse[k] ??= ''
+                sse[k] += v
+              }
             }
             buf = buf.slice(i + 1)
           }
