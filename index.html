@@ -274,7 +274,7 @@
 <body>
   <div class="container">
     <header id="header" data-swap="keep" on:load="el.dataset.ts=new Date().valueOf()" on:destroy="console.log(el)">
-      <h1>🦇 batsignal.js</h1>
+      <h1 on:load on:click|once="console.log('once')">🦇 batsignal.js</h1>
       <p class="tagline">Lightweight reactive HTML with server-sent events</p>
       <a class="github" href="https://github.com/jhthorsen/batsignal.js">View on GitHub →</a>
     </header>

@@ -150,17 +150,19 @@
       el._I = true
 
       for (const a of el.attributes) {
-        const event = a.name.replace(/^on:/, '')
-        if (event == a.name) continue;
+        const match = a.name.match(/^on:(.+)/)
+        if (!match) continue;
 
+        const event = match[1].split('|')
+        const opt = event.slice(1).reduce((opt, n) => { opt[n] = true; return opt }, {})
         const handler = compile(el, a.value)
-        if (event == 'load') {
+        if (event[0] == 'load') {
           $w.requestAnimationFrame(handler)
-        } else if (event == 'value') {
+        } else if (event[0] == 'value') {
           if (el.tagName == 'SELECT' || el.type == 'checkbox' || el.type == 'radio') {
-            listen(el, el, 'change', handler)
+            listen(el, el, 'change', handler, opt)
           } else if (el.tagName == 'INPUT' || el.tagName == 'TEXTAREA') {
-            listen(el, el, 'input', handler)
+            listen(el, el, 'input', handler, opt)
           }
 
           listen(el, el, 'value', ({detail}) => {
@@ -170,7 +172,7 @@
 
           handler()
         } else {
-          listen(el, el, event, handler)
+          listen(el, el, event[0], handler, opt)
         }
       }
     })
