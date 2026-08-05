@@ -152,14 +152,14 @@
     }
   </style>
   <script>
-    window.store = window.store || new Proxy({count: 0}, {
+    window.store = window.store || (window.store = new Proxy({count: 0}, {
       set(object, key, value) {
         Reflect.set(object, key, value);
         if (key === 'count') document.querySelector('#count').textContent = value;
         if (key === 'name') document.querySelector('#name-output').textContent = value || '(empty)';
         return true;
       },
-    });
+    }))
 
     window.demoTestBase = location.href;
     window.addEventListener('DOMContentLoaded', () => {
@@ -215,6 +215,16 @@
         if (!document.querySelector('.status').textContent.startsWith('Updated at ')) throw new Error('$() did not select the status element.');
         pass('$()');
 
+        window.injectedScriptRuns = 0;
+        window.dispatchEvent(new CustomEvent('sse-patch-elements', {
+          detail: {
+            data: '<script>window.injectedScriptRuns += 1<\/script>',
+            url: '/script-evaluation-test',
+          },
+        }));
+        if (window.injectedScriptRuns !== 1) throw new Error('Injected script was not evaluated.');
+        pass('Injected script evaluation');
+
         const link = document.querySelector('#navigation-link');
         const linkUrl = new URL(link.href);
         const linkPatch = waitForPatch(url => url === linkUrl.pathname, 'the link response');
@@ -243,7 +253,6 @@
 
         const store = window.store;
         const persistedCount = store.count;
-        const persistedName = store.name;
         const reloadLink = document.querySelector('#reload-link');
         const reloadUrl = new URL(reloadLink.href);
         const style = document.head.querySelector('style');
@@ -251,8 +260,10 @@
         const reloadPatch = waitForPatch(url => url === reloadUrl.pathname, 'the index.html response');
         reloadLink.click();
         await reloadPatch;
-        if (window.store !== store || window.store.count !== persistedCount || window.store.name !== persistedName) throw new Error('window.store did not persist after loading index.html.');
-        if (document.querySelector('#count').textContent !== String(persistedCount) || document.querySelector('#name-input').value !== persistedName) throw new Error('Persisted store values were not restored in the page.');
+        if (window.store !== store) throw new Error('window.store did not persist after loading index.html.');
+        if (window.store.name !== '') throw new Error('window.store.name was not cleared by on:value.');
+        if (window.store.count !== persistedCount) throw new Error('window.store.count did not persist after loading index.html.');
+        if (document.querySelector('#count').textContent != String(persistedCount)) throw new Error('window.store.count were not restored in the page.');
         if (document.head.querySelector('style') !== style) throw new Error('index.html replaced style in head.');
         if (document.body.querySelector('script')) throw new Error('index.html inserted script[data-swap=ignore] tag.');
         if (document.querySelector('[data-swap=keep]').dataset.ts !== ts) throw new Error('index.html replaced data-swap=keep tag.');

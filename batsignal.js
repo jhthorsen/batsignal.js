@@ -149,6 +149,7 @@
       if (el._I) return
       el._I = true
 
+      let load;
       for (const a of el.attributes) {
         const match = a.name.match(/^on:(.+)/)
         if (!match) continue;
@@ -157,7 +158,7 @@
         const opt = event.slice(1).reduce((opt, n) => { opt[n] = true; return opt }, {})
         const handler = compile(el, a.value)
         if (event[0] == 'load') {
-          $w.requestAnimationFrame(handler)
+          load = handler
         } else if (event[0] == 'value') {
           if (el.tagName == 'SELECT' || el.type == 'checkbox' || el.type == 'radio') {
             listen(el, el, 'change', handler, opt)
@@ -175,6 +176,8 @@
           listen(el, el, event[0], handler, opt)
         }
       }
+
+      if (load) load()
     })
   }
 
@@ -227,7 +230,13 @@
     $($d, '[data-owner]', el => (hasBody || (url && el.dataset.owner == url)) && el.remove())
     style.forEach(el => $d.head.appendChild([el, (el.dataset.owner = url || '')][0]))
     hasBody ? (swap(dom) || swapBody(dom)) : swap(dom)
-    script.forEach(el => $d.head.appendChild([el, (el.dataset.owner = url || '')][0]))
+    script.forEach(el => {
+      const copy = $d.createElement('script')
+      for (const {name, value} of el.attributes) copy.setAttribute(name, value)
+      copy.dataset.owner = url || ''
+      copy.textContent = el.textContent
+      $d.head.appendChild(copy)
+    })
     init()
 
     function destroy(el) {
