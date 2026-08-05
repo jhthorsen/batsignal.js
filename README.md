@@ -149,6 +149,15 @@ A full HTML document replaces the body (unless the response contains `data-swap`
 <!-- Also supported: replaceWith:#messages and morph:#messages -->
 ```
 
+Fragments are parsed through a `<template>`, so partials can contain elements
+that require a specific parent context, such as a table row:
+
+```html
+<tr data-swap="append:#orders tbody">
+  <td>New order</td>
+</tr>
+```
+
 `morph` uses the required `window.Idiomorph` dependency. The following modes control a response element without inserting it:
 
 ```html

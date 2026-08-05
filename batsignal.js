@@ -206,9 +206,11 @@
     if (!data) return
 
     const hasBody = data.indexOf('<body') != -1
-    const dom = hasBody
-      ? new DOMParser().parseFromString(data, 'text/html')
-      : $d.createRange().createContextualFragment(data)
+    const dom = hasBody ? new DOMParser().parseFromString(data, 'text/html') : (() => {
+      const t = $d.createElement('template')
+      t.innerHTML = data
+      return t.content
+    })()
 
     $(dom, '[data-swap=ignore]', el => el.remove())
     $(dom, '[data-swap=keep]', b => {

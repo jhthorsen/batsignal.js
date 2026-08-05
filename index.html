@@ -1,11 +1,15 @@
 <!doctype html>
 <html lang="en">
+
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>batsignal.js demo</title>
   <style>
-    * { box-sizing: border-box; }
+    * {
+      box-sizing: border-box;
+    }
+
     html,
     body {
       background: #0a1929;
@@ -13,19 +17,26 @@
       min-height: 100vh;
       margin: 0;
     }
+
     body {
       background: linear-gradient(135deg, #0a1929 0%, #132f4c 100%);
       padding: 2rem 1rem;
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
       line-height: 1.6;
     }
-    .container { max-width: 900px; margin: 0 auto; }
+
+    .container {
+      max-width: 900px;
+      margin: 0 auto;
+    }
+
     header {
       margin-bottom: 3rem;
       padding-bottom: 2rem;
       border-bottom: 2px solid rgb(232 215 179 / .2);
       text-align: center;
     }
+
     h1 {
       margin: 0 0 .5rem;
       background: linear-gradient(120deg, #ffd89b, #e8d7b3);
@@ -33,6 +44,7 @@
       color: transparent;
       font-size: 2.5rem;
     }
+
     h2 {
       margin: 0 0 1.5rem;
       padding-bottom: .5rem;
@@ -40,9 +52,20 @@
       color: #ffd89b;
       font-size: 1.5rem;
     }
-    p { margin: .75rem 0; }
-    a { color: #ffd89b; }
-    .tagline { color: rgb(232 215 179 / .7); font-size: 1.1rem; }
+
+    p {
+      margin: .75rem 0;
+    }
+
+    a {
+      color: #ffd89b;
+    }
+
+    .tagline {
+      color: rgb(232 215 179 / .7);
+      font-size: 1.1rem;
+    }
+
     .github {
       display: inline-block;
       margin-top: 1rem;
@@ -53,7 +76,11 @@
       color: #e8d7b3;
       text-decoration: none;
     }
-    .github:hover { background: rgb(232 215 179 / .2); }
+
+    .github:hover {
+      background: rgb(232 215 179 / .2);
+    }
+
     section {
       margin: 2rem 0;
       padding: 2rem;
@@ -61,18 +88,22 @@
       border-radius: 8px;
       background: rgb(0 0 0 / .3);
     }
-    button, input {
+
+    button,
+    input {
       margin: .25rem 0;
       padding: .7rem;
       border: 1px solid rgb(232 215 179 / .2);
       border-radius: 4px;
       font: inherit;
     }
+
     input {
       width: 100%;
       background: rgb(232 215 179 / .05);
       color: #e8d7b3;
     }
+
     button {
       margin-right: .5rem;
       border: 0;
@@ -81,7 +112,12 @@
       cursor: pointer;
       font-weight: 600;
     }
-    button:hover { box-shadow: 0 4px 12px rgb(255 216 155 / .3); transform: translateY(-2px); }
+
+    button:hover {
+      box-shadow: 0 4px 12px rgb(255 216 155 / .3);
+      transform: translateY(-2px);
+    }
+
     output {
       display: block;
       min-height: 2rem;
@@ -93,9 +129,21 @@
       color: #ffd89b;
       font-family: Monaco, "Courier New", monospace;
     }
-    output[data-state="passed"] { border-color: #8fdb8f; color: #b9f6b9; }
-    output[data-state="failed"] { border-color: #ff9292; color: #ffd0d0; }
-    #demo-test-result { white-space: pre-line; }
+
+    output[data-state="passed"] {
+      border-color: #8fdb8f;
+      color: #b9f6b9;
+    }
+
+    output[data-state="failed"] {
+      border-color: #ff9292;
+      color: #ffd0d0;
+    }
+
+    #demo-test-result {
+      white-space: pre-line;
+    }
+
     footer {
       padding-top: 2rem;
       border-top: 2px solid rgb(232 215 179 / .2);
@@ -185,6 +233,14 @@
         if (navigationResult.dataset.test !== 'form-passed' || navigationResult.dataset.initialized !== 'true') throw new Error('Form response was not patched and initialized.');
         pass('Form submit, partial patch, and initialization');
 
+        const tableRowLink = document.querySelector('#table-row-link');
+        const tableRowUrl = new URL(tableRowLink.href);
+        const tableRowPatch = waitForPatch(url => url === tableRowUrl.pathname, 'the table row response');
+        tableRowLink.click();
+        await tableRowPatch;
+        if (!document.querySelector('#navigation-table-body > tr[data-test="tr-passed"]')) throw new Error('Table row response was not appended.');
+        pass('Table row partial patch');
+
         const store = window.store;
         const persistedCount = store.count;
         const persistedName = store.name;
@@ -214,89 +270,99 @@
     };
   </script>
 </head>
+
 <body>
   <div class="container">
-    <header id="header" data-swap="keep"
-      on:load="el.dataset.ts=new Date().valueOf()"
-      on:destroy="console.log(el)">
+    <header id="header" data-swap="keep" on:load="el.dataset.ts=new Date().valueOf()" on:destroy="console.log(el)">
       <h1>🦇 batsignal.js</h1>
       <p class="tagline">Lightweight reactive HTML with server-sent events</p>
       <a class="github" href="https://github.com/jhthorsen/batsignal.js">View on GitHub →</a>
     </header>
 
     <section>
-    <h2><code>on:click</code></h2>
-    <p>Every interactive element includes <code>on:load</code>, which makes batsignal initialize it.</p>
-    <button on:load on:click="store.count--" on:destroy="console.log(el)">-</button>
-    <button id="counter-increment" on:load on:click="store.count++">+</button>
-    <button on:load on:click="store.count = 0">Reset</button>
-    <output id="count" on:load="el.textContent = store.count">0</output>
+      <h2><code>on:click</code></h2>
+      <p>Every interactive element includes <code>on:load</code>, which makes batsignal initialize it.</p>
+      <button on:load on:click="store.count--" on:destroy="console.log(el)">-</button>
+      <button id="counter-increment" on:load on:click="store.count++">+</button>
+      <button on:load on:click="store.count = 0">Reset</button>
+      <output id="count" on:load="el.textContent = store.count">0</output>
     </section>
 
     <section>
-    <h2><code>on:value</code></h2>
-    <label>
-      Your name
-      <input id="name-input" on:load="el.value = store.name || ''" on:value="store.name = el.value" placeholder="Type here">
-    </label>
-    <output id="name-output">(empty)</output>
+      <h2><code>on:value</code></h2>
+      <label>
+        Your name
+        <input id="name-input" on:load="el.value = store.name || ''" on:value="store.name = el.value"
+          placeholder="Type here">
+      </label>
+      <output id="name-output">(empty)</output>
     </section>
 
     <section>
-    <h2><code>@listen</code></h2>
-    <label>
-      Live echo
-      <input id="echo-input" placeholder="Type here">
-    </label>
-    <output id="echo-output" on:load="@listen('#echo-input', 'input', evt => {el.textContent = evt.target.value})">(waiting)</output>
+      <h2><code>@listen</code></h2>
+      <label>
+        Live echo
+        <input id="echo-input" placeholder="Type here">
+      </label>
+      <output id="echo-output"
+        on:load="@listen('#echo-input', 'input', evt => {el.textContent = evt.target.value})">(waiting)</output>
     </section>
 
     <section>
-    <h2><code>@dispatch</code></h2>
-    <button id="dispatch-button" on:load on:click="@dispatch(document, 'demo-message', {detail: 'Hello from a CustomEvent'})">
-      Dispatch event
-    </button>
-    <output id="dispatch-output" on:load="@listen(document, 'demo-message', evt => {el.textContent = evt.detail})">(waiting)</output>
+      <h2><code>@dispatch</code></h2>
+      <button id="dispatch-button" on:load
+        on:click="@dispatch(document, 'demo-message', {detail: 'Hello from a CustomEvent'})">
+        Dispatch event
+      </button>
+      <output id="dispatch-output"
+        on:load="@listen(document, 'demo-message', evt => {el.textContent = evt.detail})">(waiting)</output>
     </section>
 
     <section>
-    <h2><code>$()</code></h2>
-    <p><code>$()</code> is a short alias for <code>document.querySelector()</code>.</p>
-    <button id="dollar-button" on:load on:click="$('.status').textContent = 'Updated at ' + new Date().toLocaleTimeString()">
-      <span class="status">Click to update this text</span>
-    </button>
+      <h2><code>$()</code></h2>
+      <p><code>$()</code> is a short alias for <code>document.querySelector()</code>.</p>
+      <button id="dollar-button" on:load
+        on:click="$('.status').textContent = 'Updated at ' + new Date().toLocaleTimeString()">
+        <span class="status">Click to update this text</span>
+      </button>
     </section>
 
     <section id="navigation-demo">
-    <h2>Links and forms</h2>
-    <p>
-      These use batsignal's document-level navigation handlers. They request
-      static partial responses, so they also work on GitHub Pages.
-    </p>
+      <h2>Links and forms</h2>
+      <p>
+        These use batsignal's document-level navigation handlers. They request
+        static partial responses, so they also work on GitHub Pages.
+      </p>
 
-    <p>
-      <a id="navigation-link" href="tests/link.html" data-history="none">Follow this link</a>
-    </p>
-    <p>
-      <a id="reload-link" href="index.html" data-history="none">Load index.html again</a>
-    </p>
+      <p>
+        <a id="navigation-link" href="tests/link.html" data-history="none">Follow this link</a>
+      </p>
+      <p>
+        <a id="reload-link" href="index.html" data-history="none">Load index.html again</a>
+      </p>
+      <p>
+        <a id="table-row-link" href="tests/tr.html" data-history="none">Append a table row</a>
+      </p>
 
-    <form id="navigation-form" action="tests/form.html" method="get" data-history="none">
-      <label>
-        Message
-        <input name="form-demo" placeholder="Send with GET">
-      </label>
-      <button type="submit">Submit form</button>
-    </form>
+      <form id="navigation-form" action="tests/form.html" method="get" data-history="none">
+        <label>
+          Message
+          <input name="form-demo" placeholder="Send with GET">
+        </label>
+        <button type="submit">Submit form</button>
+      </form>
 
-    <output id="navigation-result">Try the link or form.</output>
+      <output id="navigation-result">Try the link or form.</output>
+      <table>
+        <tbody id="navigation-table-body"></tbody>
+      </table>
     </section>
 
     <section>
-    <h2>Overall functionality test</h2>
-    <p>Clicks the link and submits the form above, then verifies their DOM patches.</p>
-    <button on:load on:click="runDemoTest(el)">Run overall test</button>
-    <output id="demo-test-result">Ready to run.</output>
+      <h2>Overall functionality test</h2>
+      <p>Clicks the link and submits the form above, then verifies their DOM patches.</p>
+      <button on:load on:click="runDemoTest(el)">Run overall test</button>
+      <output id="demo-test-result">Ready to run.</output>
     </section>
 
     <footer>
@@ -307,4 +373,5 @@
   <script data-swap="ignore" src="https://unpkg.com/idiomorph@0.7.4/dist/idiomorph.min.js"></script>
   <script data-swap="ignore" src="./batsignal.js"></script>
 </body>
+
 </html>
