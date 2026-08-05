@@ -179,6 +179,7 @@
 
       if (load) load()
     })
+    dispatch($d, 'ready')
   }
 
   /**
