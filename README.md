@@ -122,6 +122,9 @@ their declared method. `data-history` controls the history update:
 <a href="/account" data-history="none">Do not update history</a>
 ```
 
+Modified or non-primary link clicks, links with a `target` or `download`
+attribute, and cross-origin links use normal browser navigation.
+
 `fetch()` also aborts an earlier request from the same target to the same URL. Response handling depends on `Content-Type`:
 
 | Content-Type | Event |
