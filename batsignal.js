@@ -86,7 +86,10 @@
       if (o.search) toParams(o.search, u.searchParams)
 
       const $h = $($d.head, 'meta[name=batsignal-headers]')
-      const headers = toParams($h ? compile($h, `return {${$h.content}}`)() : {}, o.headers ?? new Headers())
+      const headers = new Headers(o.headers)
+      for (const [name, value] of Object.entries($h ? compile($h, `return {${$h.content}}`)() : {})) {
+        headers.append(name, value)
+      }
       const r = await $w.fetch(u, {...o, headers, signal: ac.signal})
       const ct = r.headers.get('content-type') ?? ''
       if (ct.startsWith('text/html')) {
@@ -278,7 +281,10 @@
     const el = evt.target?.closest('form')
     if (evt.defaultPrevented || !el || el.target.startsWith('_')) return // _blank, _top, _self, ...
 
-    const [u, b, r] = [new URL(el.getAttribute('action'), L.href), new FormData(el), {method: el.method}]
+    const u = new URL(el.action || L.href)
+    if (u.origin != L.origin) return // Not the same site
+
+    const [b, r] = [new FormData(el), {method: el.method}]
     const $s = evt.submitter
     if ($s && $s.name) b.append($s.name, $s.value)
 
@@ -286,8 +292,6 @@
     if (r.method.toLowerCase() == 'post') {
       const c = 'application/x-www-form-urlencoded'
       const t = el.enctype || c
-      r.headers = new Headers()
-      r.headers.append('content-type', t)
       r.body = t == c ? new URLSearchParams(b) : b
     } else {
       for (const [k, v] of b.entries()) u.searchParams.append(k, v)

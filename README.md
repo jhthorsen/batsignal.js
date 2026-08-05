@@ -111,7 +111,10 @@ like `document.querySelector()`:
 
 ## Requests and responses
 
-Links to the same origin and forms are intercepted. Links use `GET`; forms use their declared method. `data-history` controls the history update:
+Links and forms targeting the same origin are intercepted. A form without an
+`action` submits to the current page, as it would without batsignal.js.
+Cross-origin forms use normal browser submission. Links use `GET`; forms use
+their declared method. `data-history` controls the history update:
 
 ```html
 <a href="/account">Push a history entry</a>
