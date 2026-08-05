@@ -39,7 +39,7 @@ Listen for events with the `on:<event>` syntax. In addition to standard events s
 <button on:load on:click="alert('Hello')">Hello</button>
 ```
 
-`on:load` runs once when batsignal initializes the element. It also runs for new elements after a response patches the page.
+`on:load` runs once for each DOM node when batsignal initializes it. It also runs for new elements after a response patches the page, but not again when Idiomorph retains an existing element during a `morph` swap.
 
 ### `on:destroy`
 

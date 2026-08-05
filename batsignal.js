@@ -155,7 +155,7 @@
 
         const handler = compile(el, a.value)
         if (event == 'load') {
-          handler()
+          $w.requestAnimationFrame(handler)
         } else if (event == 'value') {
           if (el.tagName == 'SELECT' || el.type == 'checkbox' || el.type == 'radio') {
             listen(el, el, 'change', handler)
@@ -232,7 +232,7 @@
       dispatch(el, 'destroy')
       $(el, '[on\\:load]', destroy)
       for (const k in el._C ?? {}) for (const c of el._C[k]) c()
-      ;['_C'].forEach(k => delete el[k])
+      ;['_C', '_I'].forEach(k => delete el[k])
     }
 
     function swap(parsed) {
