@@ -4,6 +4,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="fetch-headers" content="'x-nonce':'demo'">
   <title>batsignal.js demo</title>
   <style>
     * {
@@ -204,12 +205,12 @@
         const echoInput = document.querySelector('#echo-input');
         echoInput.value = 'Batsignal test';
         echoInput.dispatchEvent(new Event('input', {bubbles: true}));
-        if (document.querySelector('#echo-output').textContent !== 'Batsignal test') throw new Error('@listen did not receive the input event.');
-        pass('@listen');
+        if (document.querySelector('#echo-output').textContent !== 'Batsignal test') throw new Error('ctx.listen did not receive the input event.');
+        pass('ctx.listen');
 
         document.querySelector('#dispatch-button').click();
-        if (document.querySelector('#dispatch-output').textContent !== 'Hello from a CustomEvent') throw new Error('@dispatch did not deliver the custom event.');
-        pass('@dispatch');
+        if (document.querySelector('#dispatch-output').textContent !== 'Hello from a CustomEvent') throw new Error('ctx.dispatch did not deliver the custom event.');
+        pass('ctx.dispatch');
 
         document.querySelector('#dollar-button').click();
         if (!document.querySelector('.status').textContent.startsWith('Updated at ')) throw new Error('$() did not select the status element.');
@@ -299,7 +300,7 @@
 <body>
   <div class="container">
     <header id="header" data-swap="keep" on:load="el.dataset.ts=new Date().valueOf()" on:destroy="console.log(el)">
-      <h1 on:load on:click|once="console.log('once')">🦇 batsignal.js</h1>
+      <h1 on:load on:mouseover|once="console.log('Only once...')">🦇 batsignal.js</h1>
       <p class="tagline">Lightweight reactive HTML with server-sent events</p>
       <a class="github" href="https://github.com/jhthorsen/batsignal.js">View on GitHub →</a>
     </header>
@@ -324,23 +325,23 @@
     </section>
 
     <section>
-      <h2><code>@listen</code></h2>
+      <h2><code>ctx.listen</code></h2>
       <label>
         Live echo
         <input id="echo-input" placeholder="Type here">
       </label>
       <output id="echo-output"
-        on:load="@listen('#echo-input', 'input', evt => {el.textContent = evt.target.value})">(waiting)</output>
+        on:load="ctx.listen($('#echo-input'), 'input', evt => {el.textContent = evt.target.value})">(waiting)</output>
     </section>
 
     <section>
-      <h2><code>@dispatch</code></h2>
+      <h2><code>ctx.dispatch</code></h2>
       <button id="dispatch-button" on:load
-        on:click="@dispatch(document, 'demo-message', {detail: 'Hello from a CustomEvent'})">
+        on:click="ctx.dispatch(document, 'demo-message', 'Hello from a CustomEvent')">
         Dispatch event
       </button>
       <output id="dispatch-output"
-        on:load="@listen(document, 'demo-message', evt => {el.textContent = evt.detail})">(waiting)</output>
+        on:load="ctx.listen(document, 'demo-message', evt => {el.textContent = evt.detail})">(waiting)</output>
     </section>
 
     <section>

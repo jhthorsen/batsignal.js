@@ -76,25 +76,26 @@ Once initialized, `on:<event>` adds an event listener to the element. The handle
 <output id="name"></output>
 ```
 
-## Inline helper functions
+## Handler bindings
 
-Handlers can use these `@` helpers:
+Attribute handlers receive `el` (the element), `evt` (the event), and `ctx`.
+`ctx` contains helpers bound to the element:
 
 | Helper | Behavior |
 | --- | --- |
-| `@dispatch(target, name, options)` | Dispatches `new CustomEvent(name, options)` on a selector or node. |
-| `@fetch(target, url, options)` | Fetches `url` for `target` and handles the response as described below. |
-| `@get(url, options)` | Alias for `@fetch(el, url, options)`, where `el` is the element containing the attribute. |
-| `@listen(target, name, callback, options)` | Adds a listener and associates its cleanup with the element containing the attribute. |
+| `ctx.fetch(url, options)` | Fetches `url` for `el` and handles the response as described below. |
+| `ctx.listen(target, name, callback, options)` | Adds a listener using the element lifecycle signal by default. |
+| `ctx.dispatch(target, name, detail, options)` | Dispatches a `CustomEvent` on `target`. |
+| `ctx.signal` | Aborts when batsignal removes or replaces `el`. |
 
 For example:
 
 ```html
-<button on:load on:click="@dispatch(document, 'saved', {detail: 'Done'})">
+<button on:load on:click="ctx.dispatch(document, 'saved', 'Done')">
   Save
 </button>
 
-<output on:load="@listen(document, 'saved', evt => {el.textContent = evt.detail})"></output>
+<output on:load="ctx.listen(document, 'saved', evt => {el.textContent = evt.detail})"></output>
 
 <button on:load on:click="$('.status').textContent = 'Updated'">
   <span class="status">Waiting</span>
@@ -125,7 +126,10 @@ their declared method. `data-history` controls the history update:
 Modified or non-primary link clicks, links with a `target` or `download`
 attribute, and cross-origin links use normal browser navigation.
 
-`fetch()` also aborts an earlier request from the same target to the same URL. Response handling depends on `Content-Type`:
+Requests run concurrently by default. Set `navigation: true` to abort every
+earlier pending batsignal request before starting a browser-style navigation:
+`fetch('/account', {navigation: true})`. Response handling depends on
+`Content-Type`:
 
 | Content-Type | Event |
 | --- | --- |
@@ -182,7 +186,7 @@ For a full-document response, `keep` moves the current element into the incoming
 To add headers to every batsignal request, the meta tag content is inserted inside an object literal. Use object entries, **without outer braces**:
 
 ```html
-<meta name="batsignal-headers" content='"X-Request-ID": "example"'>
+<meta name="fetch-headers" content='"X-Request-ID": "example"'>
 ```
 
 The content is evaluated as JavaScript. Only serve trusted documents.
@@ -193,7 +197,7 @@ This repository's `index.html` is a client-side demo and can be served directly 
 
 ## Security
 
-Attribute values and `batsignal-headers` are compiled with `new Function()`. Never put untrusted input into either location. Batsignal does not sanitize HTML received from the server; sanitize user-generated content before sending it in an HTML response.
+Attribute values and `fetch-headers` are compiled with `new Function()`. Never put untrusted input into either location. Batsignal does not sanitize HTML received from the server; sanitize user-generated content before sending it in an HTML response.
 
 ## License
 
