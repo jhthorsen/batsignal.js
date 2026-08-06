@@ -275,7 +275,7 @@
   // Listens for click events on links and intercepts them for SPA navigation.
   listen($w, $d, 'click', (evt) => {
     const el = evt.target?.closest('a[href], area[href]')
-    if (evt.defaultPrevented || evt.button != 0 || evt.metaKey || evt.ctrlKey || evt.shiftKey || evt.altKey || !el || el.target || el.hasAttribute('download')) return
+    if (!el || evt.defaultPrevented || evt.button != 0 || evt.metaKey || evt.ctrlKey || evt.shiftKey || evt.altKey || el.target || el.hasAttribute('download')) return
 
     const url = new URL(el.href || el.getAttribute('href'), L.href)
     if (url.origin != L.origin) return // Not the same site
@@ -285,7 +285,7 @@
     if (m != 'none') H[m]({}, null, url.pathname + url.search + url.hash)
 
     evt.preventDefault()
-    fetch($d.body, url.pathname + url.search, {method: 'GET'})
+    fetch(el, url.pathname + url.search, {method: 'GET'})
   })
 
   // Listens for popstate events (back/forward navigation) and fetches the new page content.
@@ -299,7 +299,7 @@
   // Listens for form submissions and intercepts them for SPA navigation.
   listen($w, $d, 'submit', (evt) => {
     const el = evt.target?.closest('form')
-    if (evt.defaultPrevented || !el || el.target.startsWith('_')) return // _blank, _top, _self, ...
+    if (!el || evt.defaultPrevented || el.target.startsWith('_')) return // _blank, _top, _self, ...
 
     const u = new URL(el.action || L.href)
     if (u.origin != L.origin) return // Not the same site
@@ -320,7 +320,7 @@
     if (m != 'none') H[m]({}, null, u.toString())
     if ($s) $s.ariaBusy = 'true'
     evt.preventDefault()
-    fetch($d.body, u.toString(), r).finally(() => {
+    fetch(el, u.toString(), r).finally(() => {
       if ($s) $s.ariaBusy = 'false'
     })
   })
