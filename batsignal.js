@@ -69,7 +69,7 @@
    * @fires sse-message - Dispatched when content-type contains "json"
    * @fires sse-{event} - Dispatched for each SSE event when content-type is text/event-stream
    * @fires sse-unknown - Dispatched for unrecognized content types
-   * @fires sse-error - Dispatched on fetch error (unless default prevented)
+   * @fires fetch - Dispatched when starting and ending a request
    */
   async function fetch(el, url, o = {}) {
     function toParams(i, o = new FormData()) {
@@ -90,7 +90,9 @@
       for (const [name, value] of Object.entries($h ? compile($h, `return {${$h.content}}`)() : {})) {
         headers.append(name, value)
       }
+      dispatch(el, 'fetch', {bubbles: true, detail: {options: o, headers, url: u}})
       const r = await $w.fetch(u, {...o, headers, signal: ac.signal})
+      dispatch(el, 'fetch', {bubbles: true, detail: {response: r}})
       const ct = r.headers.get('content-type') ?? ''
       if (ct.startsWith('text/html')) {
         dispatch(el, 'sse-patch-elements', {bubbles: true, detail: {data: await r.text(), url}})
@@ -126,7 +128,7 @@
 
       return r
     } catch (error) {
-      if (error.name != 'AbortError') dispatch(el, 'sse-error', {bubbles: true, detail: {error, options: o, url}})
+      dispatch(el, 'fetch', {bubbles: true, detail: {error, options: o, url}})
       return null
     }
   }
@@ -203,8 +205,9 @@
   }
 
   // Retris failed fetch() requests after 3 seconds unless defaultPrevented is true
-  listen($w, $w, 'sse-error', ({detail: {options: o, url}, defaultPrevented: d, target}) => {
-    if (!d && o.method == 'GET') setTimeout(() => target.parentNode && fetch(target, url, o), 3000)
+  listen($w, $w, 'fetch', ({detail, defaultPrevented, target}) => {
+    if (defaultPrevented || !detail.error || detail.error.name == 'AbortError') return
+    if (detail.options.method == 'GET') setTimeout(() => target.parentNode && fetch(target, detail.url, detail.options), 3000)
   })
 
   // Parses HTML responses and swaps elements in the DOM based on data-swap attributes.
@@ -318,7 +321,6 @@
     if ($s) $s.ariaBusy = 'true'
     evt.preventDefault()
     fetch($d.body, u.toString(), r).finally(() => {
-      el.ariaBusy = 'false'
       if ($s) $s.ariaBusy = 'false'
     })
   })

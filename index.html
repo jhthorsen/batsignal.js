@@ -227,11 +227,25 @@
 
         const link = document.querySelector('#navigation-link');
         const linkUrl = new URL(link.href);
+        const fetchEvents = [];
+        const onFetch = (event) => fetchEvents.push(event.detail);
+        document.body.addEventListener('fetch', onFetch);
         const linkPatch = waitForPatch(url => url === linkUrl.pathname, 'the link response');
         link.click();
         await linkPatch;
+        document.body.removeEventListener('fetch', onFetch);
         if (document.querySelector('#navigation-result').dataset.test !== 'link-passed') throw new Error('Link response was not patched.');
         pass('Link click and partial patch');
+
+        if (fetchEvents.length !== 2) throw new Error('Fetch did not dispatch both lifecycle events.');
+        const [beforeFetch, responseFetch] = fetchEvents;
+        if (beforeFetch.options.method !== 'GET' || !(beforeFetch.headers instanceof Headers) || beforeFetch.url.href !== linkUrl.href) {
+          throw new Error('Fetch did not dispatch the expected before event.');
+        }
+        if (!responseFetch.response || responseFetch.response.url !== linkUrl.href) {
+          throw new Error('Fetch did not dispatch the expected response event.');
+        }
+        pass('Fetch before and response events');
 
         result = document.querySelector('#demo-test-result');
         const form = document.querySelector('#navigation-form');

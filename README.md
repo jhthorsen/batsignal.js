@@ -134,7 +134,11 @@ attribute, and cross-origin links use normal browser navigation.
 | `text/event-stream` (parameters allowed) | `sse-<event>` with `{data, url}` for each SSE message, or `sse-message` when no event is specified |
 | anything else | `sse-unknown` with `{response, url}` |
 
-Errors dispatch `sse-error` with `{error, options, url}`. The built-in retry listener retries only requests whose `options.method` is exactly `"GET"`.
+`fetch()` dispatches a bubbling `fetch` event on the target before making the
+request with `{options, headers, url}`, after receiving a response with
+`{response}`, and on a non-aborted error with `{error, options, url}`. The
+built-in retry listener retries only requests whose `options.method` is
+exactly `"GET"`.
 
 ### HTML patches
 
