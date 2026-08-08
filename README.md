@@ -140,9 +140,21 @@ earlier pending batsignal request before starting a browser-style navigation:
 
 `fetch()` dispatches a bubbling `fetch` event on the target before making the
 request with `{options, headers, url}`, after receiving a response with
-`{response}`, and on a non-aborted error with `{error, options, url}`. The
-built-in retry listener retries only requests whose `options.method` is
-exactly `"GET"`.
+`{response}`, and on an error with `{error, options, url}`. To retry a safe
+request, add an `on:fetch` handler to the element that started it. This example
+retries a failed request at most three times, with a three-second delay:
+
+```html
+<a href="/account" on:load on:fetch="
+  if (evt.detail.response) { el.retryCount = 0; return }
+  if (!evt.detail.error || evt.detail.error.name == 'AbortError' || !el.isConnected) return
+  if ((el.retryCount ?? 0) >= 3) return
+  el.retryCount = (el.retryCount ?? 0) + 1
+  setTimeout(() => el.isConnected && ctx.fetch(evt.detail.url, evt.detail.options), 3000)
+">
+  View account
+</a>
+```
 
 ### HTML patches
 

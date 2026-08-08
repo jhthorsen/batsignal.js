@@ -195,12 +195,6 @@
     dispatch($d, 'ready')
   }
 
-  // Retris failed fetch() requests after 3 seconds unless defaultPrevented is true
-  listen($w, 'fetch', ({detail, defaultPrevented, target}) => {
-    if (defaultPrevented || !detail.error || detail.error.name == 'AbortError') return
-    if (detail.options.method == 'GET') setTimeout(() => target.parentNode && fetch(target, detail.url, detail.options), 3000)
-  })
-
   // Parses HTML responses and swaps elements in the DOM based on data-swap attributes.
   listen($w, 'sse-patch-elements', ({detail: {data, url}}) => {
     if (!data) return
