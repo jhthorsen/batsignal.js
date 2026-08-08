@@ -206,14 +206,14 @@
 
     $(dom, '[data-swap=ignore]', el => el.remove())
     $(dom, '[data-swap=keep]', b => {
-      const a = b.id && $($d, `#${b.id}`)
+      const a = b.id && $d.getElementById(b.id)
       a ? b.replaceWith(a) : b.remove()
     })
 
     const [script, style] = ['script', 'style'].map(sel => $(dom, sel, el => [el, el.remove()][0]))
     hasBody
       ? $(dom, 'title', t => $($d, 'title').textContent = t.textContent)
-      : Array.from(dom.children).forEach(el => el.id && !el.dataset.swap && (el.dataset.swap = `morph:#${el.id}`))
+      : Array.from(dom.children).forEach(el => el.id && !el.dataset.swap && (el.dataset.swap = 'morph'))
     $($d, '[data-owner]', el => (hasBody || (url && el.dataset.owner == url)) && el.remove())
     style.forEach(el => $d.head.appendChild([el, (el.dataset.owner = url || '')][0]))
     hasBody ? (swap(dom) || swapBody(dom)) : swap(dom)
@@ -239,7 +239,7 @@
       return $(parsed, '[data-swap]', b => {
         const [m, sel] = b.dataset.swap.split(':', 2)
         if (m == 'keep') return false
-        const a = $($d, sel || `#${b.id}`)
+        const a = sel ? $($d, sel) : $d.getElementById(b.id)
         if (m == 'remove') return a && (destroy(a), a.remove())
         if (m == 'morph' || m == 'replaceWith') destroy(a)
         m == 'morph' ? Idiomorph.morph(a, b) : a[m](b)

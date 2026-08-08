@@ -226,6 +226,17 @@
         if (window.injectedScriptRuns !== 1) throw new Error('Injected script was not evaluated.');
         pass('Injected script evaluation');
 
+        const specialId = 'swap:id';
+        const special = document.createElement('output');
+        special.id = specialId;
+        document.body.append(special);
+        window.dispatchEvent(new CustomEvent('sse-patch-elements', {
+          detail: {data: `<output id="${specialId}" data-swap="replaceWith">Special ID patched.</output>`},
+        }));
+        if (document.getElementById(specialId)?.textContent.trim() !== 'Special ID patched.') throw new Error('An ID containing a CSS-special character was not patched.');
+        document.getElementById(specialId).remove();
+        pass('Special-character ID patch');
+
         const link = document.querySelector('#navigation-link');
         const linkUrl = new URL(link.href);
         const fetchEvents = [];
