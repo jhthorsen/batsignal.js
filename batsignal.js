@@ -240,7 +240,8 @@
         const [m, sel] = b.dataset.swap.split(':', 2)
         if (m == 'keep') return false
         const a = sel ? $($d, sel) : $d.getElementById(b.id)
-        if (m == 'remove') return a && (destroy(a), a.remove())
+        if (!a || (m != 'morph' && typeof a[m] != 'function')) return console.warn('batsignal can\'t swap', {m, sel, a, b}), true
+        if (m == 'remove') return destroy(a), a.remove(), true
         if (m == 'morph' || m == 'replaceWith') destroy(a)
         m == 'morph' ? Idiomorph.morph(a, b) : a[m](b)
         return true

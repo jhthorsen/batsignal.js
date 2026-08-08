@@ -174,6 +174,9 @@ A full HTML document replaces the body (unless the response contains `data-swap`
 <!-- Also supported: replaceWith:#messages and morph:#messages -->
 ```
 
+When a swap target does not exist, or its requested mode is unsupported,
+batsignal logs a warning and ignores that response element.
+
 Fragments are parsed through a `<template>`, so partials can contain elements
 that require a specific parent context, such as a table row:
 
