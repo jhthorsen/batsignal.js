@@ -123,8 +123,8 @@ their declared method. `data-history` controls the history update:
 <a href="/account" data-history="none">Do not update history</a>
 ```
 
-Modified or non-primary link clicks, links with a `target` or `download`
-attribute, and cross-origin links use normal browser navigation.
+Modified or non-primary link clicks, links or forms with a `target`, links with
+a `download` attribute, and cross-origin links use normal browser navigation.
 
 Requests run concurrently by default. Set `navigation: true` to abort every
 earlier pending batsignal request before starting a browser-style navigation:

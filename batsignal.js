@@ -286,7 +286,7 @@
   // Listens for form submissions and intercepts them for SPA navigation.
   listen($w, 'submit', (evt) => {
     const el = evt.target?.closest('form')
-    if (!el || evt.defaultPrevented || el.target.startsWith('_')) return // _blank, _top, _self, ...
+    if (!el || evt.defaultPrevented || el.target) return
 
     const u = new URL(el.action || L.href)
     if (u.origin != L.origin) return // Not the same site
