@@ -258,6 +258,14 @@
         if (navigationResult.dataset.test !== 'form-passed' || navigationResult.dataset.initialized !== 'true') throw new Error('Form response was not patched and initialized.');
         pass('Form submit, partial patch, and initialization');
 
+        const override = document.querySelector('#navigation-form-override');
+        const overrideUrl = new URL(override.formAction);
+        const overridePatch = waitForPatch(url => new URL(url, window.demoTestBase).pathname === overrideUrl.pathname, 'the submitter override response');
+        form.requestSubmit(override);
+        await overridePatch;
+        if (document.querySelector('#navigation-result').dataset.test !== 'link-passed') throw new Error('Submitter formaction was not used.');
+        pass('Submitter formaction override');
+
         const tableRowLink = document.querySelector('#table-row-link');
         const tableRowUrl = new URL(tableRowLink.href);
         const tableRowPatch = waitForPatch(url => url === tableRowUrl.pathname, 'the table row response');
@@ -376,6 +384,7 @@
           <input name="form-demo" placeholder="Send with GET">
         </label>
         <button type="submit">Submit form</button>
+        <button id="navigation-form-override" type="submit" formaction="tests/link.html">Use submitter action</button>
       </form>
 
       <output id="navigation-result">Try the link or form.</output>

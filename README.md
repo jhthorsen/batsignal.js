@@ -123,6 +123,11 @@ their declared method. `data-history` controls the history update:
 <a href="/account" data-history="none">Do not update history</a>
 ```
 
+Submitting controls can override a form's `action`, `method`, or `enctype`
+with the standard `formaction`, `formmethod`, and `formenctype` attributes.
+Forms or submitting controls with a `target` use normal browser submission.
+Forms with `method="dialog"` retain their native dialog behavior.
+
 Modified or non-primary link clicks, links or forms with a `target`, links with
 a `download` attribute, and cross-origin links use normal browser navigation.
 

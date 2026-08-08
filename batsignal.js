@@ -284,19 +284,21 @@
   // Listens for form submissions and intercepts them for SPA navigation.
   listen($w, 'submit', (evt) => {
     const el = evt.target?.closest('form')
-    if (!el || evt.defaultPrevented || el.target) return
+    const $s = evt.submitter
+    if (!el || evt.defaultPrevented || el.target || $s?.formTarget) return
 
-    const u = new URL(el.action || L.href)
+    const u = new URL($s?.formAction || el.action || L.href)
     if (u.origin != L.origin) return // Not the same site
 
-    const [b, r] = [new FormData(el), {method: el.method, navigation: true}]
-    const $s = evt.submitter
-    if ($s && $s.name) b.append($s.name, $s.value)
+    const method = $s?.formMethod || el.method
+    if (method.toLowerCase() == 'dialog') return
+
+    const [b, r] = [new FormData(el, $s), {method, navigation: true}]
 
     const m = el.dataset.history || 'pushState'
     if (r.method.toLowerCase() == 'post') {
       const c = 'application/x-www-form-urlencoded'
-      const t = el.enctype || c
+      const t = $s?.formEnctype || el.enctype || c
       r.body = t == c ? new URLSearchParams(b) : b
     } else {
       for (const [k, v] of b.entries()) u.searchParams.append(k, v)
