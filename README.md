@@ -126,8 +126,8 @@ their declared method. `data-history` controls the history update:
 Modified or non-primary link clicks, links or forms with a `target`, links with
 a `download` attribute, and cross-origin links use normal browser navigation.
 
-Requests run concurrently by default. Set `navigation: true` to abort every
-earlier pending batsignal request before starting a browser-style navigation:
+Requests run concurrently by default. Set `navigation: true` to abort an
+earlier pending navigation request before starting a browser-style navigation:
 `fetch('/account', {navigation: true})`. Response handling depends on
 `Content-Type`:
 

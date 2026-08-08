@@ -1,8 +1,8 @@
 ;(function ($w, $d, H, L) {
   'use strict';
   // $w: window, $d: document, H: history, L: location URL, S: private node state
-  const S = new WeakMap(), R = new Set()
-  S.set($w, {ac: new AbortController(), req: R})
+  const S = new WeakMap(), N = new Set()
+  S.set($w, {ac: new AbortController(), req: new Set()})
 
   /**
    * DOM node selector utility. Will use querySelectorAll() if a callback
@@ -63,10 +63,8 @@
 
   /**
    * Fetches a resource and dispatches appropriate events based on content type.
-   * A window-level error listener retries requests with opt.method === 'GET'.
-   *
    * Headers can be injected via: <meta name="fetch-headers" content='"X-Foo": "bar"'>
-   * Requests run concurrently unless the `navigation` option aborts all pending requests.
+   * Requests run concurrently unless the `navigation` option aborts a pending navigation request.
    *
    * @param {Node} el - The target DOM node (for cleanup tracking).
    * @param {string} url - A relative or absolute URL to fetch.
@@ -95,9 +93,9 @@
         headers.append(name, value)
 
       dispatch(el, 'fetch', {options: opt, headers, url: u}, {bubbles: true})
-      if (opt.navigation) for (const ac of R) ac.abort()
+      if (opt.navigation) for (const ac of N) ac.abort()
       state.req.add(ac)
-      R.add(ac)
+      if (opt.navigation) N.add(ac)
       const r = await $w.fetch(u, {...opt, headers, signal: ac.signal})
       dispatch(el, 'fetch', {response: r}, {bubbles: true})
 
@@ -140,7 +138,7 @@
       return null
     } finally {
       state.req.delete(ac)
-      R.delete(ac)
+      N.delete(ac)
     }
   }
 
