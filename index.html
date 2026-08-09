@@ -306,7 +306,19 @@
       <h2>Demo app</h2>
 
       <p>
-        This todo app demonstrates most of batsignal.js's functionality.
+        Submit a todo to fetch a tiny HTML response and append its table row
+        without reloading the page. The input is remembered in
+        <code>localStorage</code>, completed items update the count, and
+        “Clear completed” removes them from the DOM. The empty-state row needs
+        no JavaScript: CSS shows it only while it is the table body's only row.
+      </p>
+      <p>
+        The handlers use familiar, vanilla JavaScript, so you do not need to
+        learn another framework. Together, batsignal.js and Idiomorph add only
+        about 9&nbsp;kB, compared with roughly 30&nbsp;kB for Datastar and
+        50&nbsp;kB for htmx 2.0.
+      </p>
+      <p>
         Inspect the source to see how it works.
       </p>
 
@@ -339,7 +351,7 @@
     </section>
 
     <section>
-      <h2><code>on:click</code></h2>
+      <h2>on:click</h2>
       <p>Every interactive element includes <code>on:load</code>, which makes batsignal initialize it.</p>
       <button on:load on:click="store.count--" on:destroy="console.log(el)">-</button>
       <button id="counter-increment" on:load on:click="store.count++">+</button>
@@ -348,7 +360,7 @@
     </section>
 
     <section>
-      <h2><code>on:value</code></h2>
+      <h2>on:value</h2>
       <label>
         Your name
         <input id="name-input" on:load="el.value = store.name || ''" on:value="store.name = el.value"
@@ -358,7 +370,7 @@
     </section>
 
     <section>
-      <h2><code>ctx.listen</code></h2>
+      <h2>ctx.listen</h2>
       <label>
         Live echo
         <input id="echo-input" placeholder="Type here">
@@ -368,7 +380,7 @@
     </section>
 
     <section>
-      <h2><code>ctx.dispatch</code></h2>
+      <h2>ctx.dispatch</h2>
       <button id="dispatch-button" on:load
         on:click="ctx.dispatch(document, 'demo-message', 'Hello from a CustomEvent')">
         Dispatch event
@@ -378,7 +390,7 @@
     </section>
 
     <section>
-      <h2><code>$()</code></h2>
+      <h2>$(parent, selector, [cb])</h2>
       <p><code>$()</code> is a short alias for <code>document.querySelector()</code>.</p>
       <button id="dollar-button" on:load
         on:click="$('.status').textContent = 'Updated at ' + new Date().toLocaleTimeString()">
