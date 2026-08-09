@@ -354,7 +354,7 @@
         reloadLink.click();
         await reloadPatch;
         if (window.store !== store) throw new Error('window.store did not persist after loading index.html.');
-        if (window.store.name !== '') throw new Error('window.store.name was not cleared by on:value.');
+        if (window.store.name === '') throw new Error('window.store.name was cleared by on:value.');
         if (window.store.count !== persistedCount) throw new Error('window.store.count did not persist after loading index.html.');
         if (document.querySelector('#count').textContent != String(persistedCount)) throw new Error('window.store.count were not restored in the page.');
         if (document.head.querySelector('style') !== style) throw new Error('index.html replaced style in head.');

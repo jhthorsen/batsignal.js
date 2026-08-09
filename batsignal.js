@@ -160,7 +160,7 @@
       if (S.has(el)) return
       S.set(el, {ac: new AbortController(), req: new Set()})
 
-      let load;
+      const load = [];
       for (const a of el.attributes) {
         const match = a.name.match(/^on:(.+)/)
         if (!match) continue;
@@ -169,7 +169,7 @@
         const opt = event.slice(1).reduce((opt, n) => { opt[n] = true; return opt }, {})
         const cb = compile(el, a.value)
         if (event[0] == 'load') {
-          load = cb
+          load.unshift(cb)
         } else if (event[0] == 'value') {
           if (el.tagName == 'SELECT' || el.type == 'checkbox' || el.type == 'radio') {
             listen(el, 'change', cb, opt)
@@ -182,13 +182,13 @@
             cb()
           }, opt)
 
-          cb()
+          load.push(cb)
         } else {
           listen(el, event[0], cb, opt)
         }
       }
 
-      if (load) load()
+      load.forEach(cb => cb())
     })
     dispatch($d, 'ready')
   }
