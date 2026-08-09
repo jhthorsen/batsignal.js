@@ -1,0 +1,12 @@
+<!-- This file uses on:load handlers to emulate a backend. -->
+<tr data-swap="append:#todos">
+  <td style="width: 2em">
+    <label>
+      <input type="checkbox" name="completed" on:load="el.value=$(el.form, '[name=completed]', $i => $i).length"
+        aria-label="Mark as completed">
+    </label>
+  </td>
+  <td on:load="const $i=el.closest('form').todo;el.textContent=$i.value;$i.value=''">
+    ...
+  </td>
+</tr>
