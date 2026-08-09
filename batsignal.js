@@ -288,7 +288,7 @@
     const $s = evt.submitter
     if (!el || evt.defaultPrevented || el.target || $s?.formTarget) return
 
-    const u = new URL($s?.formAction || el.action || L.href)
+    const u = new URL($s?.hasAttribute('formaction') ? $s.formAction : el.action || L.href)
     if (u.origin != L.origin) return // Not the same site
 
     const method = $s?.formMethod || el.method
