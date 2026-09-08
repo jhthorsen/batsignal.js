@@ -91,6 +91,7 @@
       const headers = new Headers(opt.headers)
       for (const [name, value] of Object.entries($h ? compile($h, `return {${$h.content}}`)() : {}))
         headers.append(name, value)
+      if (opt.isSSE && opt.lastEventId) headers.set('Last-Event-ID', opt.lastEventId)
 
       dispatch(el, 'fetch', {options: opt, headers, url: u}, {bubbles: true})
       if (opt.navigation) for (const ac of N) ac.abort()
@@ -105,6 +106,7 @@
       } else if (ct.match(/\bjson\b/)) {
         dispatch(el, 'sse-message', {data: await r.text(), url}, {bubbles: true})
       } else if (ct.startsWith('text/event-stream')) {
+        opt.isSSE = true
         const decoder = new TextDecoder('utf-8'), reader = r.body.getReader()
         let buf = '', sse = {}
         for (;;) {
@@ -120,6 +122,8 @@
               const colon = line.indexOf(':')
               const [k, v] = colon < 0 ? [line, ''] : [line.slice(0, colon), line.slice(colon + 1).replace(/^ /, '')]
               if (k == 'data') sse.data = (sse.data ?? '') + v + '\n'
+              else if (k == 'id' && !v.includes('\0')) opt.lastEventId = v
+              else if (k == 'retry' && /^\d+$/.test(v)) opt.retry = Number(v)
               else {
                 sse[k] ??= ''
                 sse[k] += v
@@ -128,17 +132,31 @@
             buf = buf.slice(i + 1)
           }
         }
+        return reconnect(new Error('SSE stream closed'))
       } else {
         dispatch(el, 'sse-unknown', {response: r, url}, {bubbles: true})
       }
 
       return r
     } catch (error) {
-      dispatch(el, 'fetch', {error, options: opt, url}, {bubbles: true})
-      return null
+      if (ac.signal.aborted) {
+        return null
+      } else if (opt.isSSE) {
+        return reconnect(error)
+      } else {
+        dispatch(el, 'fetch', {error, options: opt, url}, {bubbles: true})
+        return null
+      }
     } finally {
       state.req.delete(ac)
       N.delete(ac)
+    }
+
+    async function reconnect(error) {
+      const delay = opt.retry ?? 3000
+      console.debug(`batsignal reconnects SSE ${url} after ${delay}ms because ${error}`)
+      await new Promise(resolve => setTimeout(resolve, delay))
+      return !ac.signal.aborted && el.parentNode ? fetch(el, url, opt) : null
     }
   }
 
