@@ -222,16 +222,18 @@
       return t.content
     })()
 
+    const keep = new Set()
     $(dom, '[data-swap=ignore]', el => el.remove())
     $(dom, '[data-swap=keep]', b => {
+      if (b.parentNode === dom) return delete b.dataset.swap
       const a = b.id && $d.getElementById(b.id)
-      a ? b.replaceWith(a) : b.remove()
+      if (a) [keep.add(b.id), b.replaceWith(a)]
     })
 
     const [script, style] = ['script', 'style'].map(sel => $(dom, sel, el => [el, el.remove()][0]))
     hasBody
       ? $(dom, 'title', t => $($d, 'title').textContent = t.textContent)
-      : Array.from(dom.children).forEach(el => el.id && !el.dataset.swap && (el.dataset.swap = 'morph'))
+      : Array.from(dom.children).forEach(el => (el.id && !el.dataset.swap) && (el.dataset.swap = 'morph'))
     $($d, '[data-owner]', el => (hasBody || (url && el.dataset.owner == url)) && el.remove())
     style.forEach(el => $d.head.appendChild([el, (el.dataset.owner = url || '')][0]))
     hasBody ? (swap(dom) || swapBody(dom)) : swap(dom)
@@ -246,7 +248,7 @@
 
     function destroy(el) {
       dispatch(el, 'destroy')
-      $(el, '[on\\:load]', destroy)
+      $(el, '[on\\:load]', a => keep.has(a.id) || destroy(a))
       const value = S.get(el)
       value?.ac.abort()
       for (const ac of value?.req.values() ?? []) ac.abort()
@@ -258,7 +260,7 @@
         const [m, sel] = b.dataset.swap.split(':', 2)
         if (m == 'keep') return false
         const a = sel ? $($d, sel) : $d.getElementById(b.id)
-        if (!a || (m != 'morph' && typeof a[m] != 'function')) return console.warn('batsignal can\'t swap', {m, sel, a, b}), true
+        if (!a || (m != 'morph' && typeof a[m] != 'function')) return false
         if (m == 'remove') return destroy(a), a.remove(), true
         if (m == 'morph' || m == 'replaceWith') destroy(a)
         m == 'morph' ? Idiomorph.morph(a, b) : a[m](b)
