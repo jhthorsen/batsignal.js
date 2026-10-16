@@ -143,9 +143,10 @@ earlier pending navigation request before starting a browser-style navigation:
 | `text/event-stream` (parameters allowed) | `sse-<event>` with `{data, url}` for each SSE message, or `sse-message` when no event is specified |
 | anything else | `sse-unknown` with `{response, url}` |
 
-SSE connections reconnect after either a stream close or a read failure. The
-default delay is 3000 ms; a server-sent `retry:` field replaces it. A received
-`id:` is sent as `Last-Event-ID` on the next connection.
+SSE connections reconnect after a read failure, but not after a graceful stream
+close, matching `EventSource`. The default delay is 3000 ms; a server-sent
+`retry:` field replaces it. A received `id:` is sent as `Last-Event-ID` on the
+next connection.
 
 `fetch()` dispatches a bubbling `fetch` event on the target before making the
 request with `{options, headers, url}`, after receiving a response with

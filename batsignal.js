@@ -132,7 +132,6 @@
             buf = buf.slice(i + 1)
           }
         }
-        return reconnect(new Error('SSE stream closed'))
       } else {
         dispatch(el, 'sse-unknown', {response: r, url}, {bubbles: true})
       }
