@@ -86,6 +86,7 @@ Attribute handlers receive `el` (the element), `evt` (the event), and `ctx`.
 | `ctx.fetch(url, options)` | Fetches `url` for `el` and handles the response as described below. |
 | `ctx.listen(target, name, callback, options)` | Adds a listener using the element lifecycle signal by default. |
 | `ctx.dispatch(target, name, detail, options)` | Dispatches a `CustomEvent` on `target`. |
+| `ctx.init(root)` | Initializes `root` and its descendants that have `on:load`. |
 | `ctx.signal` | Aborts when batsignal removes or replaces `el`. |
 
 For example:
@@ -100,6 +101,17 @@ For example:
 <button on:load on:click="$('.status').textContent = 'Updated'">
   <span class="status">Waiting</span>
 </button>
+```
+
+Use `ctx.init()` to initialize elements created in JavaScript. Append the root
+before calling it so `on:load` handlers run with the element in its final DOM
+context:
+
+```js
+const child = document.createElement('button')
+child.setAttribute('on:load', "el.textContent = 'Ready'")
+document.body.append(child)
+ctx.init(child)
 ```
 
 `$()` is exposed on `window` (when that name is not already in use) and works

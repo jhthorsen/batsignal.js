@@ -32,6 +32,7 @@
         fetch: (...a) => fetch(el, ...a),
         listen: (el, name, cb, opt = {}) => listen(el, name, cb, {signal, ...opt}),
         dispatch,
+        init,
         signal,
       })
     } catch (error) {
@@ -172,8 +173,13 @@
    *
    * Each element is initialized only once (tracked in private WeakMap state).
    */
-  function init() {
-    $($d, '[on\\:load]', (el) => {
+  function init(root = $d) {
+    const elements = [
+      ...(root.matches?.('[on\\:load]') ? [root] : []),
+      ...root.querySelectorAll('[on\\:load]'),
+    ]
+
+    elements.forEach((el) => {
       if (S.has(el)) return
       S.set(el, {ac: new AbortController(), req: new Set()})
 
@@ -207,7 +213,7 @@
 
       load.forEach(cb => cb())
     })
-    dispatch($d, 'ready')
+    if (root == $d) dispatch($d, 'ready')
   }
 
   // Parses HTML responses and swaps elements in the DOM based on data-swap attributes.
