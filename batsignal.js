@@ -7,13 +7,13 @@
   /**
    * DOM node selector utility. Will use querySelectorAll() if a callback
    * is provided, otherwise querySelector().
-   * @param {Element} parent - Parent element to search within.
-   * @param {string} selector - CSS selector string.
+   * @param {Element} parent - Parent element to search within. Defaults to document if omitted.
+   * @param {string} selector - CSS selector string. This is the only required parameter.
    * @param {Function} [cb] - Callback for each matched element (Optional)
    * @returns {Element|Array<*>} - Single element if no callback, array of
    *   callback results otherwise.
    */
-  const $ = ($p, s, cb) => !cb ? (s ? $p : $d).querySelector(s ?? $p) : Array.from($p.querySelectorAll(s), cb)
+  const $ = ($p, s, cb) => (s?.call && ([cb, s, $p] = [s, $p, $d]), s ?? ([s,$p] = [$p,$d]), cb ? [...$p.querySelectorAll(s)].map(cb) : $p.querySelector(s))
   if (!$w.$) $w.$ = $
 
   /**
