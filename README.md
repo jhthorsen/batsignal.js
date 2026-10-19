@@ -29,6 +29,58 @@ With batsignal.js loaded, this button is interactive and the same-origin link is
 
 ## Event handlers
 
+### Plugins
+
+Add a plugin as an inert `<script>` containing an object expression. The script
+element itself is the plugin. Batsignal evaluates each script once, calls optional
+`setup(script, C)` once when it first discovers the plugin, passing the plugin
+`<script>` element and the shared helper registry. Plugins can add helpers to
+`C` in `setup()`; batsignal includes those helpers in the `ctx` passed to
+plugin `init()` hooks and attribute handlers. It calls optional `init(el, ctx)` for each newly initialized element with
+`on:load`, before binding that element's `on:*` handlers. `ctx` has the same
+helpers available to attribute handlers. Inside both hooks, `this` refers to
+the plugin object.
+
+```html
+<script type="text/plain" data-batsignal-plugin="widget">
+({
+  setup(script) {
+    console.log('Loaded plugin:', script.dataset.batsignalPlugin)
+  },
+  init(el, ctx) {
+    if (el.matches('[data-widget]')) ctx.listen(el, 'click', handleWidgetClick)
+  },
+})
+</script>
+```
+
+Either method may be omitted. `init` also runs for new elements added by HTML
+patches:
+
+Place plugin scripts before batsignal to run them during the initial page
+initialization. Batsignal has no public `init` method. A plugin script added
+later is picked up the next time Batsignal initializes elements, such as after
+an HTML patch. Each script tag is an independent plugin; its
+`data-batsignal-plugin` value is a label. Plugins can add shared helpers to
+`C` from `setup()`:
+
+```html
+<script type="text/plain" data-batsignal-plugin="clipboard">
+({
+  setup(script, C) {
+    C.copy = text => navigator.clipboard.writeText(text)
+  },
+})
+</script>
+<button on:load on:click="ctx.copy('Copied text')">Copy</button>
+```
+
+The added helpers are available to every plugin `init()` hook and attribute
+handler. If plugins assign the same helper name, the later setup assignment
+replaces the earlier one. Core context helpers such as `fetch` and `listen`
+take precedence over plugin helpers.
+Removing a script tag means it won't run for elements initialized afterward.
+
 Listen for events with the `on:<event>` syntax. In addition to standard events such as `click` and `submit`, batsignal.js provides the special events listed below.
 
 ### `on:load`

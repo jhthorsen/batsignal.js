@@ -1,7 +1,7 @@
 ;(function ($w, $d, H, L) {
   'use strict';
   // $w: window, $d: document, H: history, L: location URL, S: private node state
-  const S = new WeakMap(), N = new Set()
+  const S = new WeakMap(), N = new Set(), P = new WeakMap(), C = {}
   S.set($w, {ac: new AbortController(), req: new Set()})
 
   /**
@@ -27,16 +27,22 @@
    */
   function compile(el, body) {
     try {
-      const cb = new Function('el', 'evt', 'ctx', body), signal = S.get(el)?.ac.signal
-      return (evt) => cb(el, evt, {
-        fetch: (...a) => fetch(el, ...a),
-        listen: (el, name, cb, opt = {}) => listen(el, name, cb, {signal, ...opt}),
-        dispatch,
-        init,
-        signal,
-      })
+      const cb = new Function('el', 'evt', 'ctx', body)
+      return (evt) => cb(el, evt, context(el))
     } catch (error) {
       console.error(error, el, body)
+    }
+  }
+
+  function context(el) {
+    const signal = S.get(el)?.ac.signal
+    return {
+      ...C,
+      fetch: (...a) => fetch(el, ...a),
+      listen: (el, name, cb, opt = {}) => listen(el, name, cb, {signal, ...opt}),
+      dispatch,
+      init,
+      signal,
     }
   }
 
@@ -174,14 +180,30 @@
    * Each element is initialized only once (tracked in private WeakMap state).
    */
   function init(root = $d) {
-    const elements = [
+    const $plugins = $d.querySelectorAll('script[type="text/plain"][data-batsignal-plugin]')
+    for (const $p of $plugins) {
+      try {
+        if (P.has($p)) continue
+        const plugin = new Function('return (' + $p.textContent + ')')()
+        P.set($p, plugin)
+        if (typeof plugin.setup == 'function') plugin.setup.call(plugin, $p, C)
+      } catch (error) {
+        console.error(error, $p)
+        P.delete($p)
+      }
+    }
+
+    for (const el of [
       ...(root.matches?.('[on\\:load]') ? [root] : []),
       ...root.querySelectorAll('[on\\:load]'),
-    ]
-
-    elements.forEach((el) => {
-      if (S.has(el)) return
+    ]) {
+      if (S.has(el)) continue
       S.set(el, {ac: new AbortController(), req: new Set()})
+
+      for (const $p of $plugins) {
+        const plugin = P.get($p)
+        if (typeof plugin?.init == 'function') plugin.init.call(plugin, el, context(el))
+      }
 
       const load = [];
       for (const a of el.attributes) {
@@ -212,7 +234,8 @@
       }
 
       load.forEach(cb => cb())
-    })
+    }
+
     if (root == $d) dispatch($d, 'ready')
   }
 
