@@ -51,7 +51,7 @@
       }
     }
   </style>
-  <script>
+  <script nonce="demo">
     window.store = window.store || (window.store = new Proxy({count: 0}, {
       set(object, key, value) {
         Reflect.set(object, key, value);
@@ -118,7 +118,7 @@
         window.injectedScriptRuns = 0;
         window.dispatchEvent(new CustomEvent('sse-patch-elements', {
           detail: {
-            data: '<script>window.injectedScriptRuns += 1<\/script>',
+            data: '<script nonce="demo">window.injectedScriptRuns += 1<\/script>',
             url: '/script-evaluation-test',
           },
         }));
@@ -409,9 +409,9 @@
       <p>MIT License © 2026 Jan Henning Thorsen</p>
     </footer>
   </main>
-  <script data-swap="ignore" src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.30.0/prism.min.js"></script>
-  <script data-swap="ignore" src="https://unpkg.com/idiomorph@0.7.4/dist/idiomorph.min.js"></script>
-  <script data-swap="ignore" src="./batsignal.js"></script>
+  <script nonce="demo" data-swap="ignore" src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.30.0/prism.min.js"></script>
+  <script nonce="demo" data-swap="ignore" src="https://unpkg.com/idiomorph@0.7.4/dist/idiomorph.min.js"></script>
+  <script nonce="demo" data-swap="ignore" src="./batsignal.js"></script>
 </body>
 
 </html>
