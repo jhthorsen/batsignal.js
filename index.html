@@ -8,40 +8,10 @@
   <meta name="fetch-headers" content="'x-nonce':'demo'">
   <title>batsignal.js demo</title>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.amber.min.css">
+  <link rel="stylesheet" href="batsignal.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.30.0/themes/prism-tomorrow.min.css">
   <style>
-    html,
-    body {
-      background: linear-gradient(135deg, #0a1929 0%, #132f4c 100%);
-    }
-
-    section {
-      margin: 4rem 0;
-    }
-
-    h1 {
-      margin: 0 0 .5rem;
-      background: linear-gradient(120deg, hsl(35.6, 78.6%, 40.4%), hsl(41 54% 81% / 100%));
-      background-clip: text;
-      color: transparent;
-      font-size: 2.5rem;
-    }
-
-    h2 {
-      margin: 0 0 1.5rem;
-      padding-bottom: .5rem;
-      border-bottom: 2px solid rgb(255 216 155 / .3);
-      font-size: 1.5rem;
-    }
-
     output {
-      font-family: var(--pico-font-family-monospace);
-      display: block;
-      margin-top: .8rem;
-      padding: 1rem;
-      border-left: 3px solid #ffd89b;
-      border-radius: 4px;
-      background: rgb(19 47 76 / .5);
-
       [data-state="passed"] {
         border-color: #8fdb8f;
         color: #b9f6b9;
@@ -55,10 +25,6 @@
 
     td {
       --pico-background-color: transparent;
-    }
-
-    .container {
-      max-width: 48rem;
     }
 
     .feature {
@@ -249,17 +215,12 @@
   </script>
 </head>
 
-<body>
-  <div class="container">
-    <header id="header" data-swap="keep" on:load="el.dataset.ts=new Date().valueOf()" on:destroy="console.log(el)"
-      style="margin: 3rem 0 6rem 0;text-align: center">
-      <p class="eyebrow" style="
-      font-size: .8rem;
-      margin: 0 0 .5rem;
-      letter-spacing: .12em;
-      text-transform: uppercase">HTML-first interactivity</p>
+<body class="index-page">
+  <main class="container">
+    <header id="header" class="site-header" data-swap="keep" on:load="el.dataset.ts=new Date().valueOf()" on:destroy="console.log(el)">
+      <p class="site-header__eyebrow">HTML-first interactivity</p>
       <h1 on:load on:mouseover|once="console.log('Only once...')">🦇 batsignal.js</h1>
-      <p class="tagline" style="font-size: 1.1rem;max-width: 40rem;margin: .75rem auto 0">
+      <p class="site-header__tagline">
         Add polished interactions to server-rendered pages without adopting a
         full-stack JavaScript framework.
       </p>
@@ -300,6 +261,11 @@
         Then add <code>on:load</code> and an event handler to an element. The
         examples below are live, so you can see the behavior immediately.
       </p>
+    </section>
+
+    <section>
+      <h2>Plugins</h2>
+      <p>Plugins can add attribute-driven behavior to initialized elements. Explore the <a href="plugins/keyboard.html">keyboard shortcut</a>, <a href="plugins/outside-click.html">outside click</a>, <a href="plugins/clipboard.html">copy to clipboard</a>, <a href="plugins/persistent-state.html">persistent state</a>, <a href="plugins/reveal.html">reveal</a>, <a href="plugins/resize.html">resize observer</a>, <a href="plugins/timed-visibility.html">timed visibility</a>, <a href="plugins/forms.html">form helpers</a>, and <a href="plugins/confirm-form.html">form confirmation</a> plugins.</p>
     </section>
 
     <section>
@@ -442,7 +408,8 @@
       <p>Read the <a href="README.md" target="_blank">README</a> for navigation, forms, HTML patches, and SSE.</p>
       <p>MIT License © 2026 Jan Henning Thorsen</p>
     </footer>
-  </div>
+  </main>
+  <script data-swap="ignore" src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.30.0/prism.min.js"></script>
   <script data-swap="ignore" src="https://unpkg.com/idiomorph@0.7.4/dist/idiomorph.min.js"></script>
   <script data-swap="ignore" src="./batsignal.js"></script>
 </body>

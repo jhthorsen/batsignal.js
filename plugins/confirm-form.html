@@ -1,0 +1,67 @@
+doctype html>
+<html lang="en" data-theme="dark">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Form confirmation plugin — batsignal.js</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.amber.min.css">
+  <link rel="stylesheet" href="../batsignal.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.30.0/themes/prism-tomorrow.min.css">
+</head>
+
+<body>
+  <header class="site-header">
+    <p class="site-header__eyebrow">HTML-first interactivity</p>
+    <h1>🦇 batsignal.js</h1>
+    <div class="grid" style="margin:2rem auto;width:20rem">
+      <a href="../index.html" role="button">Home</a>
+      <a href="https://github.com/jhthorsen/batsignal.js#readme" role="button" class="secondary">Documentation</a>
+    </div>
+  </header>
+  <main class="container">
+    <h1>Form confirmation plugin</h1>
+    <p>Add <code>data-confirm="message"</code> to a form to ask for confirmation before it submits.</p>
+    <form on:load data-confirm="Submit this form?"
+      on:submit="if (evt.defaultPrevented) return; evt.preventDefault(); $('#confirm-status').textContent = 'Confirmed — form submission handled.'">
+      <label>Message<input name="message" required placeholder="Type a message"></label>
+      <button type="submit">Submit</button>
+    </form>
+    <output id="confirm-status">Submit the form and confirm or cancel.</output>
+  </main>
+  <script type="text/plain" data-batsignal-plugin="confirm-form">
+({
+  init(el, ctx) {
+    if (el.tagName !== 'FORM') return
+    ctx.listen(el, 'submit', evt => {
+      if (!el.hasAttribute('data-confirm')) return;
+      if (!window.confirm(el.dataset.confirm)) evt.preventDefault()
+    })
+  },
+})
+  </script>
+  <section class="container">
+    <h2>Plugin code</h2>
+    <pre><code id="plugin-code" class="language-javascript"></code></pre>
+    <button type="button" class="copy-plugin-code">Copy code</button>
+  </section>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.30.0/prism.min.js"></script>
+  <script>
+    (() => {
+    const code = document.querySelector('#plugin-code')
+    code.textContent = document.querySelector('script[data-batsignal-plugin]').outerHTML
+    Prism.highlightElement(code)
+    const copyButton = document.querySelector('.copy-plugin-code')
+    copyButton.addEventListener('click', async () => {
+      await navigator.clipboard.writeText(code.textContent)
+      copyButton.textContent = 'Copied!'
+      setTimeout(() => { copyButton.textContent = 'Copy code' }, 1500)
+    })
+
+    })()
+  </script>
+  <script src="https://unpkg.com/idiomorph@0.7.4/dist/idiomorph.min.js"></script>
+  <script src="../batsignal.js"></script>
+</body>
+
+</html>

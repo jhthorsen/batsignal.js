@@ -1,0 +1,69 @@
+html,
+body {
+  background: linear-gradient(135deg, #0a1929 0%, #132f4c 100%);
+}
+
+.container {
+  max-width: 48rem;
+}
+
+main.container {
+  margin: 0 auto;
+}
+
+.index-page main.container {
+  margin-top: 4rem;
+}
+
+section {
+  margin: 4rem 0;
+}
+
+.site-header {
+  margin: 3rem 0 0;
+  text-align: center;
+}
+
+h2 {
+  margin: 0 0 1.5rem;
+  padding-bottom: .5rem;
+  border-bottom: 2px solid rgb(255 216 155 / .3);
+  font-size: 1.5rem;
+}
+
+output {
+  display: block;
+  margin-top: .8rem;
+  padding: 1rem;
+  border-left: 3px solid #ffd89b;
+  border-radius: 4px;
+  background: rgb(19 47 76 / .5);
+  font-family: var(--pico-font-family-monospace);
+}
+
+.site-header__eyebrow {
+  margin: 0 0 .5rem;
+  font-size: .8rem;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+}
+
+.site-header h1 {
+  margin: 0 0 .5rem;
+  background: linear-gradient(120deg, hsl(35.6, 78.6%, 40.4%), hsl(41 54% 81% / 100%));
+  background-clip: text;
+  color: transparent;
+  font-size: 2.5rem;
+}
+
+.site-header__tagline {
+  max-width: 40rem;
+  margin: .75rem auto 0;
+  font-size: 1.1rem;
+}
+
+pre[class*="language-"] {
+  font-size: 0.85rem !important;
+  padding: 0 !important;
+}
+

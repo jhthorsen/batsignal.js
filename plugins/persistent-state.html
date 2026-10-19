@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Persistent state plugin — batsignal.js</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.amber.min.css">
+  <link rel="stylesheet" href="../batsignal.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.30.0/themes/prism-tomorrow.min.css">
+</head>
+
+<body>
+  <header class="site-header">
+    <p class="site-header__eyebrow">HTML-first interactivity</p>
+    <h1>🦇 batsignal.js</h1>
+    <div class="grid" style="margin:2rem auto;width:20rem"><a href="../index.html" role="button">Home</a><a
+        href="https://github.com/jhthorsen/batsignal.js#readme" role="button" class="secondary">Documentation</a></div>
+  </header>
+  <main class="container">
+    <h1>Persistent state plugin</h1>
+    <p>Put <code>persist</code> on an input to restore and save its value in <code>localStorage</code>. Use the
+      attribute value as the storage key; otherwise its <code>id</code> is used.</p>
+    <label>Your note<input id="persistent-note" on:load persist="batsignal-demo-note"
+        placeholder="This value survives reloads"></label>
+  </main>
+  <script type="text/plain" data-batsignal-plugin="persistent-state">
+({
+  init(el, ctx) {
+    const key = el.getAttribute('persist') || el.id || el.name
+    if (!el.hasAttribute('persist') || !key || !('value' in el)) return
+
+    const saved = localStorage.getItem(key)
+    if (saved !== null) el.value = saved
+
+    const save = () => localStorage.setItem(key, el.value)
+    ctx.listen(el, 'input', save)
+    ctx.listen(el, 'change', save)
+  },
+})
+</script>
+  <section class="container">
+    <h2>Plugin code</h2>
+    <pre><code id="plugin-code" class="language-javascript"></code></pre>
+    <button type="button" class="copy-plugin-code">Copy code</button>
+  </section>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.30.0/prism.min.js"></script>
+  <script>
+    (() => {const code = document.querySelector('#plugin-code'); code.textContent = document.querySelector('script[data-batsignal-plugin]').outerHTML; Prism.highlightElement(code)
+    const copyButton = document.querySelector('.copy-plugin-code')
+    copyButton.addEventListener('click', async () => {
+      await navigator.clipboard.writeText(code.textContent)
+      copyButton.textContent = 'Copied!'
+      setTimeout(() => { copyButton.textContent = 'Copy code' }, 1500)
+    })
+
+    })()
+  </script>
+  <script src="https://unpkg.com/idiomorph@0.7.4/dist/idiomorph.min.js"></script>
+  <script src="../batsignal.js"></script>
+</body>
+
+</html>

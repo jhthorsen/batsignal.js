@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Form helpers plugin — batsignal.js</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.amber.min.css">
+  <link rel="stylesheet" href="../batsignal.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.30.0/themes/prism-tomorrow.min.css">
+</head>
+
+<body>
+  <header class="site-header">
+    <p class="site-header__eyebrow">HTML-first interactivity</p>
+    <h1>🦇 batsignal.js</h1>
+    <div class="grid" style="margin:2rem auto;width:20rem"><a href="../index.html" role="button">Home</a><a
+        href="https://github.com/jhthorsen/batsignal.js#readme" role="button" class="secondary">Documentation</a></div>
+  </header>
+  <main class="container">
+    <h1>Form helpers plugin</h1>
+    <p>Add an <code>&lt;output class="status"&gt;</code> inside a form. The helper reports how many required fields
+      still
+      need valid values.</p>
+    <form on:load
+      on:submit="evt.preventDefault(); el.querySelector('output.status').textContent = 'Form is valid and ready to submit.'">
+      <label>Email<input type="email" required placeholder="name@example.com"></label><button
+        type="submit">Submit</button>
+      <output class="status">Fill in a valid email and submit.</output>
+    </form>
+  </main>
+  <script type="text/plain" data-batsignal-plugin="form-helpers">
+({
+  init(el, ctx) {
+    const output = el.querySelector('output.status')
+    if (el.tagName !== 'FORM' || !output) return
+
+    const update = () => {
+      const invalid = [...el.elements].filter(field => field.willValidate && !field.validity.valid)
+      output.textContent = invalid.length
+        ? `${invalid.length} field${invalid.length === 1 ? '' : 's'} need attention.`
+        : 'All fields are valid.'
+    }
+
+    ctx.listen(el, 'input', update)
+    ctx.listen(el, 'change', update)
+    ctx.listen(el, 'invalid', update, {capture: true})
+    update()
+  },
+})
+</script>
+  <section class="container">
+    <h2>Plugin code</h2>
+    <pre><code id="plugin-code" class="language-javascript"></code></pre>
+    <button type="button" class="copy-plugin-code">Copy code</button>
+  </section>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.30.0/prism.min.js"></script>
+  <script>
+    (() => {const code = document.querySelector('#plugin-code'); code.textContent = document.querySelector('script[data-batsignal-plugin]').outerHTML; Prism.highlightElement(code)
+    const copyButton = document.querySelector('.copy-plugin-code')
+    copyButton.addEventListener('click', async () => {
+      await navigator.clipboard.writeText(code.textContent)
+      copyButton.textContent = 'Copied!'
+      setTimeout(() => { copyButton.textContent = 'Copy code' }, 1500)
+    })
+
+    })()
+  </script>
+  <script src="https://unpkg.com/idiomorph@0.7.4/dist/idiomorph.min.js"></script>
+  <script src="../batsignal.js"></script>
+</body>
+
+</html>
