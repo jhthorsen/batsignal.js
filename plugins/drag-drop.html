@@ -1,0 +1,169 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Drag and drop — batsignal.js</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.amber.min.css">
+  <link rel="stylesheet" href="../batsignal.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.30.0/themes/prism-tomorrow.min.css">
+  <style>
+    #cards {
+      display: grid;
+      gap: .75rem;
+      margin: 0;
+      padding: 0;
+      list-style: none
+    }
+
+    #cards>li {
+      list-style: none
+    }
+
+    #cards [data-card] {
+      margin: 0;
+      padding: 1rem 1.25rem;
+      border: 1px solid rgb(255 216 155 / .35);
+      border-radius: .5rem;
+      background: rgb(19 47 76 / .8);
+      transition: transform .15s ease, border-color .15s ease, background .15s ease, opacity .15s ease;
+    }
+
+    #cards [data-card]:hover {
+      transform: translateY(-2px);
+      border-color: #ffd89b
+    }
+
+    #cards [data-card].is-dragging {
+      opacity: .4
+    }
+
+    #cards [data-card].is-over {
+      border-color: #ffd89b;
+      background: rgb(255 216 155 / .18)
+    }
+
+    .drag-handle {
+      width: auto;
+      margin: 0 .75rem 0 0;
+      padding: 0 .35rem;
+      border: 0;
+      background: transparent;
+      box-shadow: none;
+      color: #ffdfa8;
+      cursor: grab;
+      touch-action: none;
+    }
+
+    .drag-handle:active {
+      cursor: grabbing
+    }
+
+    #file-drop {
+      display: grid;
+      min-height: 8rem;
+      place-items: center;
+      border: 2px dashed rgb(255 216 155 / .6);
+      border-radius: .75rem;
+      padding: 1.5rem;
+      color: #ffdfa8;
+      background: rgb(19 47 76 / .45);
+      text-align: center;
+      transition: border-color .15s ease, background .15s ease, transform .15s ease;
+    }
+
+    #file-drop.is-over {
+      transform: scale(1.01);
+      border-color: #ffd89b;
+      background: rgb(255 216 155 / .14);
+    }
+  </style>
+</head>
+
+<body>
+  <header class="site-header">
+    <p class="site-header__eyebrow">HTML-first interactivity</p>
+    <h1>🦇 batsignal.js</h1>
+    <div class="grid" style="margin:2rem auto;width:20rem"><a href="../index.html" role="button">Home</a><a
+        href="https://github.com/jhthorsen/batsignal.js#readme" role="button" class="secondary">Documentation</a></div>
+  </header>
+  <main class="container">
+    <h1>Drag and drop</h1>
+    <p>Drag a card's handle onto another card to reorder the list. Reordering stays within the cards. You can also drop
+      files from your desktop into the file area.
+    </p>
+    <section>
+      <h2>Reorder cards</h2>
+      <ul id="cards" on:load
+        on:dragover="const target = evt.target.closest('[data-card]'); if (target) { evt.preventDefault(); for (const card of el.querySelectorAll('[data-card]')) card.classList.toggle('is-over', card === target) }"
+        on:drop="const target = evt.target.closest('[data-card]'); const id = evt.dataTransfer.getData('text/plain'); const dragged = document.getElementById(id); for (const card of el.querySelectorAll('[data-card]')) card.classList.remove('is-over'); if (target && dragged && dragged !== target) { evt.preventDefault(); el.insertBefore(dragged, target) }"
+        on:dragend="for (const card of el.querySelectorAll('[data-card]')) card.classList.remove('is-over')">
+      <li id="card-one" data-card draggable="true" on:load
+        on:dragstart="if (evt.defaultPrevented) return; evt.dataTransfer.setData('text/plain', el.id); el.classList.add('is-dragging')"
+        on:dragend="el.classList.remove('is-dragging')"><button type="button" class="drag-handle"
+          data-drag-handle aria-label="Drag to reorder">⠿</button>First card</li>
+      <li id="card-two" data-card draggable="true" on:load
+        on:dragstart="if (evt.defaultPrevented) return; evt.dataTransfer.setData('text/plain', el.id); el.classList.add('is-dragging')"
+        on:dragend="el.classList.remove('is-dragging')"><button type="button" class="drag-handle"
+          data-drag-handle aria-label="Drag to reorder">⠿</button>Second card</li>
+      <li id="card-three" data-card draggable="true" on:load
+        on:dragstart="if (evt.defaultPrevented) return; evt.dataTransfer.setData('text/plain', el.id); el.classList.add('is-dragging')"
+        on:dragend="el.classList.remove('is-dragging')"><button type="button" class="drag-handle"
+          data-drag-handle aria-label="Drag to reorder">⠿</button>Third card</li>
+      </ul>
+    </section>
+    <section>
+      <h2>Drop files</h2>
+      <div id="file-drop" on:load on:dragenter="el.classList.add('is-over')"
+        on:dragleave="el.classList.remove('is-over')" on:dragover="evt.preventDefault()"
+        on:drop="evt.preventDefault(); el.classList.remove('is-over'); $('#file-names').textContent = [...evt.dataTransfer.files].map(file => file.name).join(', ') || 'No files received.'">
+        Drop files here</div>
+      <output id="file-names">No files received.</output>
+    </section>
+  </main>
+  <script type="text/plain" data-batsignal-plugin="drag-handle">
+({
+  init(el, ctx) {
+    if (!el.draggable || !el.querySelector('[data-drag-handle]')) return
+
+    let startedOnHandle = false
+    ctx.listen(el, 'pointerdown', evt => {
+      const handle = evt.target.closest?.('[data-drag-handle]')
+      startedOnHandle = !!handle && el.contains(handle)
+    })
+    ctx.listen(window, 'pointerup', () => { startedOnHandle = false })
+    ctx.listen(window, 'pointercancel', () => { startedOnHandle = false })
+    ctx.listen(el, 'dragstart', evt => {
+      if (!startedOnHandle) evt.preventDefault()
+      startedOnHandle = false
+    })
+  },
+})
+</script>
+  <section class="container">
+    <h2>Drag handle plugin</h2>
+    <p>Mark a child with <code>data-drag-handle</code>. The draggable element can start dragging only when the pointer
+      went down on that handle.</p>
+    <pre><code id="plugin-code" class="language-javascript"></code></pre>
+    <button type="button" class="copy-plugin-code">Copy plugin code</button>
+  </section>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.30.0/prism.min.js"></script>
+  <script>
+    (() => {
+      const code = document.querySelector('#plugin-code')
+      code.textContent = document.querySelector('script[data-batsignal-plugin]').outerHTML
+      Prism.highlightElement(code)
+      const copyButton = document.querySelector('.copy-plugin-code')
+      copyButton.addEventListener('click', async () => {
+        await navigator.clipboard.writeText(code.textContent)
+        copyButton.textContent = 'Copied!'
+        setTimeout(() => { copyButton.textContent = 'Copy plugin code' }, 1500)
+      })
+    })()
+  </script>
+  <script src="https://unpkg.com/idiomorph@0.7.4/dist/idiomorph.min.js"></script>
+  <script src="../batsignal.js"></script>
+</body>
+
+</html>

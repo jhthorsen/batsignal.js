@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Shared store plugin — batsignal.js</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.amber.min.css">
+  <link rel="stylesheet" href="../batsignal.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.30.0/themes/prism-tomorrow.min.css">
+</head>
+
+<body>
+  <header class="site-header">
+    <p class="site-header__eyebrow">HTML-first interactivity</p>
+    <h1>🦇 batsignal.js</h1>
+    <div class="grid" style="margin:2rem auto;width:20rem"><a href="../index.html" role="button">Home</a><a
+        href="https://github.com/jhthorsen/batsignal.js#readme" role="button" class="secondary">Documentation</a></div>
+  </header>
+  <main class="container">
+    <h1>Shared store plugin</h1>
+    <p>This small in-memory store shares a value between handlers and updates every subscribed element. Reloading the
+      page resets it.</p>
+    <section>
+      <fieldset role="group">
+        <button type="button" on:load on:click="ctx.store.count--">−</button>
+        <input type="number" step="1" value="0" on:load store:count="el.value = value"
+          on:input="ctx.store.count = Number(el.value)">
+        <button type="button" on:load on:click="ctx.store.count++">+</button>
+      </fieldset>
+    </section>
+  </main>
+  <script type="text/plain" data-batsignal-plugin="store">
+({
+  subscribers: new Map(),
+  setup(script, C) {
+    C.store = new Proxy({count: 0}, {
+      set: (target, key, value) => {
+        target[key] = value
+        for (const callback of this.subscribers.get(key) ?? []) callback(value)
+        return true
+      },
+    })
+  },
+  init(el, ctx) {
+    for (const attr of el.attributes) {
+      const match = attr.name.match(/^store:(.+)$/)
+      if (!match) continue
+      const key = match[1]
+      const render = new Function('el', 'key', 'value', 'ctx', attr.value)
+      const callbacks = this.subscribers.get(key) ?? new Set()
+      const callback = value => render(el, key, value, ctx)
+      callbacks.add(callback)
+      this.subscribers.set(key, callbacks)
+      callback(ctx.store[key])
+      const unsubscribe = () => callbacks.delete(callback)
+      ctx.signal.addEventListener('abort', unsubscribe, {once: true})
+    }
+  },
+})
+</script>
+  <section class="container">
+    <h2>Plugin code</h2>
+    <pre><code id="plugin-code" class="language-javascript"></code></pre>
+    <button type="button" class="copy-plugin-code">Copy code</button>
+  </section>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.30.0/prism.min.js"></script>
+  <script>
+    (() => {
+      const code = document.querySelector('#plugin-code'); code.textContent = document.querySelector('script[data-batsignal-plugin]').outerHTML; Prism.highlightElement(code)
+      const copyButton = document.querySelector('.copy-plugin-code')
+      copyButton.addEventListener('click', async () => {
+        await navigator.clipboard.writeText(code.textContent)
+        copyButton.textContent = 'Copied!'
+        setTimeout(() => {copyButton.textContent = 'Copy code'}, 1500)
+      })
+    })()
+  </script>
+  <script src="https://unpkg.com/idiomorph@0.7.4/dist/idiomorph.min.js"></script>
+  <script src="../batsignal.js"></script>
+</body>
+
+</html>
