@@ -1,0 +1,257 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Pie chart plugin — batsignal.js</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.amber.min.css">
+  <link rel="stylesheet" href="../batsignal.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.30.0/themes/prism-tomorrow.min.css">
+  <style>
+    [data-pie-chart] {
+      position: relative;
+      width: 100%;
+      max-width: 24rem;
+      aspect-ratio: 1;
+      margin-inline: auto;
+
+      svg {
+        display: block;
+        width: 100%;
+        height: 100%;
+      }
+
+      .pie-slice {
+        stroke: var(--pico-background-color);
+        stroke-width: 2;
+        cursor: pointer;
+      }
+
+      .pie-tooltip {
+        position: absolute;
+        z-index: 1;
+        pointer-events: none;
+        white-space: nowrap;
+        padding: .25rem .5rem;
+        border-radius: .25rem;
+        background: var(--pico-color);
+        color: var(--pico-background-color);
+        font-size: .8rem;
+        transform: translate(-50%, -100%);
+        opacity: 0;
+        transition: opacity .3s ease;
+      }
+
+      .pie-tooltip.is-visible {
+        opacity: 1;
+      }
+    }
+
+    .pie-legend {
+      padding: 0;
+      margin: var(--pico-spacing) 0;
+      display: flex;
+      justify-content: center;
+      gap: var(--pico-spacing);
+    }
+
+    .pie-legend li {
+      list-style: none;
+      margin: 0;
+    }
+
+    .pie-legend li::before {
+      content: '';
+      display: inline-block;
+      width: .8em;
+      height: .8em;
+      margin-right: .4em;
+      background: var(--pie-color);
+    }
+  </style>
+</head>
+
+<body>
+  <header class="site-header">
+    <p class="site-header__eyebrow">HTML-first interactivity</p>
+    <h1>🦇 batsignal.js</h1>
+    <div class="grid" style="margin:2rem auto;width:20rem"><a href="../index.html" role="button">Home</a><a
+        href="https://github.com/jhthorsen/batsignal.js#readme" role="button" class="secondary">Documentation</a></div>
+  </header>
+  <main class="container">
+    <h1>Pie chart plugin</h1>
+    <p>Dispatch <code>pie</code> events with a legend and positive numeric value. Values accumulate into each slice and
+      the chart redraws responsively as its container changes size. Set the SVG's <code>data-inner-radius</code> to a
+      fraction from 0 to 0.9 to render a doughnut.</p>
+    <div id="pie-chart" on:load data-pie-chart data-value-suffix="%">
+      <svg viewBox="0 0 360 360" data-inner-radius="0" role="img" aria-labelledby="pie-title pie-description">
+        <title id="pie-title">Signal activity</title>
+        <desc id="pie-description">Pie chart showing the accumulated activity for each signal.</desc>
+        <g class="pie-graphics"></g>
+      </svg>
+      <div class="pie-tooltip" role="status" aria-live="polite" data-template="{legend}: {value}{suffix}"></div>
+    </div>
+    <ul class="pie-legend" aria-label="Chart legend">
+      <li style="--pie-color: #f5a623">Moonlight</li>
+      <li style="--pie-color: #4bc0c0">Bat Signal</li>
+      <li style="--pie-color: #a78bfa">Other</li>
+    </ul>
+    <button type="button" on:load
+      on:click="ctx.dispatch($('#pie-chart'), 'pie', {legend: 'Moonlight', value: Math.ceil(Math.random() * 10)})">Add
+      Moonlight</button>
+    <button type="button" class="secondary" on:load
+      on:click="ctx.dispatch($('#pie-chart'), 'pie', {legend: 'Bat Signal', value: Math.ceil(Math.random() * 10)})">Add
+      Bat Signal</button>
+    <button type="button" class="secondary" on:load
+      on:click="ctx.dispatch($('#pie-chart'), 'pie', {legend: 'Other', value: Math.ceil(Math.random() * 10)})">Add
+      Other</button>
+    <button type="button" class="secondary" on:load
+      on:click="const svg = $('#pie-chart svg'); ctx.dispatch($('#pie-chart'), 'doughnut', {innerRadius: Number(svg.dataset.innerRadius) ? 0 : .55})">Toggle
+      doughnut</button>
+    <button type="button" class="secondary" on:load on:click="ctx.dispatch($('#pie-chart'), 'reset')">Clear
+      chart</button>
+  </main>
+  <script type="text/plain" data-batsignal-plugin="pie">
+({
+  charts: new WeakMap(),
+  init(el, ctx) {
+    if (!el.hasAttribute('data-pie-chart')) return
+
+    const legends = [...document.querySelectorAll('.pie-legend li')].map(item => ({
+      name: item.textContent.trim(),
+      color: getComputedStyle(item).getPropertyValue('--pie-color').trim(),
+    }))
+    this.charts.set(el, {legends, values: new Map(legends.map(({name}) => [name, 0]))})
+
+    const observer = new ResizeObserver(() => {
+      el.querySelector('.pie-tooltip').classList.remove('is-visible')
+      this.draw(el)
+    })
+    observer.observe(el)
+    this.charts.get(el).observer = observer
+    ctx.signal.addEventListener('abort', () => observer.disconnect(), {once: true})
+
+    ctx.listen(el, 'pie', event => {
+      const {legend, value} = event.detail ?? {}
+      const amount = Number(value)
+      const values = this.charts.get(el).values
+      if (legend == null || !Number.isFinite(amount) || amount <= 0 || !values.has(String(legend))) return
+      values.set(String(legend), values.get(String(legend)) + amount)
+      this.draw(el)
+    })
+    ctx.listen(el, 'reset', () => {
+      for (const name of this.charts.get(el).values.keys()) this.charts.get(el).values.set(name, 0)
+      this.draw(el)
+    })
+    ctx.listen(el, 'doughnut', event => {
+      el.querySelector('svg').dataset.innerRadius = String(event.detail?.innerRadius ?? .55)
+      this.draw(el)
+    })
+    this.draw(el)
+  },
+  element(tagname) {
+    return document.createElementNS('http://www.w3.org/2000/svg', tagname)
+  },
+  draw(el) {
+    const {legends, values} = this.charts.get(el)
+    const svg = el.querySelector('svg')
+    const graphics = el.querySelector('.pie-graphics')
+    const tooltip = el.querySelector('.pie-tooltip')
+    const {width, height} = svg.viewBox.baseVal
+    const cx = width / 2, cy = height / 2
+    const radius = Math.min(width, height) * .46
+    const innerRadius = radius * Math.max(0, Math.min(0.9, Number(svg.dataset.innerRadius) || 0))
+    const total = legends.reduce((sum, {name}) => sum + values.get(name), 0)
+    graphics.replaceChildren()
+    if (!total) {
+      graphics.append(this.element('circle'))
+      const empty = graphics.firstChild
+      empty.setAttribute('cx', cx)
+      empty.setAttribute('cy', cy)
+      empty.setAttribute('r', radius)
+      empty.setAttribute('fill', 'none')
+      empty.setAttribute('stroke', 'currentColor')
+      empty.setAttribute('stroke-dasharray', '4 6')
+      empty.setAttribute('opacity', '.4')
+      return
+    }
+
+    let angle = -Math.PI / 2
+    for (const {name, color} of legends) {
+      const value = values.get(name)
+      if (!value) continue
+      const start = angle
+      angle += value / total * Math.PI * 2
+      const end = angle
+      const x1 = cx + radius * Math.cos(start), y1 = cy + radius * Math.sin(start)
+      const x2 = cx + radius * Math.cos(end), y2 = cy + radius * Math.sin(end)
+      const largeArc = end - start > Math.PI ? 1 : 0
+      const path = this.element('path')
+      const label = `${name}: ${Number(value.toPrecision(3))}${el.dataset.valueSuffix ?? ''} (${(value / total * 100).toFixed(1)}%)`
+      const fullCircle = end - start >= Math.PI * 2 - 1e-10
+      const pathData = fullCircle
+        ? innerRadius
+          ? `M ${cx} ${cy - radius} A ${radius} ${radius} 0 1 1 ${cx} ${cy + radius} A ${radius} ${radius} 0 1 1 ${cx} ${cy - radius} M ${cx} ${cy - innerRadius} A ${innerRadius} ${innerRadius} 0 1 0 ${cx} ${cy + innerRadius} A ${innerRadius} ${innerRadius} 0 1 0 ${cx} ${cy - innerRadius} Z`
+          : `M ${cx} ${cy - radius} A ${radius} ${radius} 0 1 1 ${cx} ${cy + radius} A ${radius} ${radius} 0 1 1 ${cx} ${cy - radius} Z`
+        : innerRadius
+          ? `M ${x1} ${y1} A ${radius} ${radius} 0 ${largeArc} 1 ${x2} ${y2} L ${cx + innerRadius * Math.cos(end)} ${cy + innerRadius * Math.sin(end)} A ${innerRadius} ${innerRadius} 0 ${largeArc} 0 ${cx + innerRadius * Math.cos(start)} ${cy + innerRadius * Math.sin(start)} Z`
+          : `M ${cx} ${cy} L ${x1} ${y1} A ${radius} ${radius} 0 ${largeArc} 1 ${x2} ${y2} Z`
+      path.setAttribute('d', pathData)
+      path.setAttribute('fill', color)
+      path.setAttribute('class', 'pie-slice')
+      path.setAttribute('tabindex', '0')
+      path.setAttribute('role', 'img')
+      path.setAttribute('aria-label', label)
+      const title = this.element('title')
+      title.textContent = label
+      path.append(title)
+      const show = () => this.showTooltip(el, path, name, value)
+      path.addEventListener('pointerenter', show)
+      path.addEventListener('pointerleave', () => tooltip.classList.remove('is-visible'))
+      path.addEventListener('focus', show)
+      path.addEventListener('blur', () => tooltip.classList.remove('is-visible'))
+      graphics.append(path)
+    }
+  },
+  showTooltip(el, slice, legend, value) {
+    const tooltip = el.querySelector('.pie-tooltip')
+    const template = tooltip.dataset.template || '{legend}: {value}{suffix}'
+    const text = template.replace(/\{(legend|value|suffix)\}/g, (_, key) => ({
+      legend,
+      value: Number(value.toPrecision(3)),
+      suffix: el.dataset.valueSuffix ?? '',
+    })[key])
+    tooltip.textContent = text
+    const chartRect = el.getBoundingClientRect()
+    const sliceRect = slice.getBoundingClientRect()
+    tooltip.style.left = `${sliceRect.left + sliceRect.width / 2 - chartRect.left}px`
+    tooltip.style.top = `${sliceRect.top + sliceRect.height / 2 - chartRect.top}px`
+    tooltip.classList.add('is-visible')
+  },
+})
+  </script>
+  <section class="container">
+    <h2>Plugin code</h2>
+    <pre><code id="plugin-code" class="language-javascript"></code></pre>
+    <button type="button" class="copy-plugin-code">Copy code</button>
+  </section>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.30.0/prism.min.js"></script>
+  <script>
+    (() => {
+      const code = document.querySelector('#plugin-code')
+      code.textContent = document.querySelector('script[data-batsignal-plugin]').outerHTML
+      Prism.highlightElement(code)
+      const copyButton = document.querySelector('.copy-plugin-code')
+      copyButton.addEventListener('click', async () => {
+        await navigator.clipboard.writeText(code.textContent)
+        copyButton.textContent = 'Copied!'
+        setTimeout(() => {copyButton.textContent = 'Copy code'}, 1500)
+      })
+    })()
+  </script>
+  <script src="https://unpkg.com/idiomorph@0.7.4/dist/idiomorph.min.js"></script>
+  <script src="../batsignal.js"></script>
+</body>
+
+</html>
