@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Plot plugin — batsignal.js</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.amber.min.css">
+  <link rel="stylesheet" href="../batsignal.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.30.0/themes/prism-tomorrow.min.css">
+  <style>
+    [data-plot] { width: 100%; max-width: 48rem; }
+    [data-plot] svg { display: block; width: 100%; height: auto; overflow: visible; }
+    [data-plot] .plot-grid { stroke: currentColor; opacity: .18; }
+    [data-plot] .plot-axis { stroke: currentColor; opacity: .65; }
+    [data-plot] .plot-label { fill: currentColor; font: 12px sans-serif; }
+  </style>
+</head>
+
+<body>
+  <header class="site-header">
+    <p class="site-header__eyebrow">HTML-first interactivity</p>
+    <h1>🦇 batsignal.js</h1>
+    <div class="grid" style="margin:2rem auto;width:20rem"><a href="../index.html" role="button">Home</a><a
+        href="https://github.com/jhthorsen/batsignal.js#readme" role="button" class="secondary">Documentation</a></div>
+  </header>
+  <main class="container">
+    <h1>Plot plugin</h1>
+    <p>Dispatch <code>plot</code> events with a legend and numeric coordinates. Each series is drawn as an SVG line, and the chart range expands to include every point.</p>
+    <div id="chart" data-plot on:load></div>
+    <button type="button" on:load on:click="ctx.dispatch($('#chart'), 'plot', {legend: 'foo', x: Math.round(Math.random() * 20), y: Math.round(Math.random() * 30)})">Add foo point</button>
+    <button type="button" class="secondary" on:load on:click="ctx.dispatch($('#chart'), 'plot', {legend: 'bar', x: Math.round(Math.random() * 20), y: Math.round(Math.random() * 30)})">Add bar point</button>
+  </main>
+  <script type="text/plain" data-batsignal-plugin="plot">
+({
+  init(el, ctx) {
+    if (!el.hasAttribute('data-plot')) return
+
+    const series = new Map([['foo', [{x: 2, y: 10}]]])
+    const colors = ['#f5a623', '#4bc0c0', '#9966ff', '#ff6384', '#36a2eb', '#8bc34a']
+    const ns = 'http://www.w3.org/2000/svg'
+    const svg = document.createElementNS(ns, 'svg')
+    svg.setAttribute('viewBox', '0 0 640 360')
+    svg.setAttribute('role', 'img')
+    svg.setAttribute('aria-label', 'Line chart')
+    el.replaceChildren(svg)
+
+    const draw = () => {
+      const width = 640, height = 360
+      const left = 54, right = 18, top = 18, bottom = 48
+      const plotWidth = width - left - right, plotHeight = height - top - bottom
+      const points = [...series.values()].flat()
+      if (!points.length) return
+
+      let minX = Math.min(...points.map(point => point.x))
+      let maxX = Math.max(...points.map(point => point.x))
+      let minY = Math.min(...points.map(point => point.y))
+      let maxY = Math.max(...points.map(point => point.y))
+      if (minX === maxX) { minX -= 1; maxX += 1 }
+      if (minY === maxY) { minY -= 1; maxY += 1 }
+      const x = value => left + (value - minX) / (maxX - minX) * plotWidth
+      const y = value => top + (maxY - value) / (maxY - minY) * plotHeight
+      const make = (name, attrs = {}, text) => {
+        const node = document.createElementNS(ns, name)
+        for (const [key, value] of Object.entries(attrs)) node.setAttribute(key, value)
+        if (text !== undefined) node.textContent = text
+        return node
+      }
+      svg.replaceChildren()
+
+      for (let i = 0; i <= 4; i++) {
+        const valueY = minY + (maxY - minY) * i / 4
+        const yy = y(valueY)
+        svg.append(make('line', {x1: left, x2: width - right, y1: yy, y2: yy, class: 'plot-grid'}))
+        svg.append(make('text', {x: left - 8, y: yy + 4, 'text-anchor': 'end', class: 'plot-label'}, Number(valueY.toPrecision(3))))
+        const valueX = minX + (maxX - minX) * i / 4
+        const xx = x(valueX)
+        svg.append(make('line', {x1: xx, x2: xx, y1: top, y2: height - bottom, class: 'plot-grid'}))
+        svg.append(make('text', {x: xx, y: height - bottom + 20, 'text-anchor': 'middle', class: 'plot-label'}, Number(valueX.toPrecision(3))))
+      }
+      svg.append(make('line', {x1: left, x2: left, y1: top, y2: height - bottom, class: 'plot-axis'}))
+      svg.append(make('line', {x1: left, x2: width - right, y1: height - bottom, y2: height - bottom, class: 'plot-axis'}))
+
+      let index = 0
+      for (const [legend, values] of series) {
+        const color = colors[index++ % colors.length]
+        const sorted = [...values].sort((a, b) => a.x - b.x)
+        const path = sorted.map((point, i) => `${i ? 'L' : 'M'}${x(point.x)},${y(point.y)}`).join(' ')
+        svg.append(make('path', {d: path, fill: 'none', stroke: color, 'stroke-width': 2.5, 'stroke-linejoin': 'round', 'stroke-linecap': 'round'}))
+        for (const point of sorted) svg.append(make('circle', {cx: x(point.x), cy: y(point.y), r: 3.5, fill: color}))
+        const legendX = left + (index - 1) * 110
+        svg.append(make('line', {x1: legendX, x2: legendX + 16, y1: height - 12, y2: height - 12, stroke: color, 'stroke-width': 3}))
+        svg.append(make('text', {x: legendX + 22, y: height - 8, class: 'plot-label'}, legend))
+      }
+    }
+
+    ctx.listen(el, 'plot', event => {
+      const {legend, x, y} = event.detail ?? {}
+      if (legend == null || !Number.isFinite(Number(x)) || !Number.isFinite(Number(y))) return
+      const key = String(legend)
+      const values = series.get(key) ?? []
+      values.push({x: Number(x), y: Number(y)})
+      series.set(key, values)
+      draw()
+    })
+    draw()
+  },
+})
+  </script>
+  <section class="container">
+    <h2>Plugin code</h2>
+    <pre><code id="plugin-code" class="language-javascript"></code></pre>
+    <button type="button" class="copy-plugin-code">Copy code</button>
+  </section>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.30.0/prism.min.js"></script>
+  <script>
+    (() => {
+      const code = document.querySelector('#plugin-code')
+      code.textContent = document.querySelector('script[data-batsignal-plugin]').outerHTML
+      Prism.highlightElement(code)
+      const copyButton = document.querySelector('.copy-plugin-code')
+      copyButton.addEventListener('click', async () => {
+        await navigator.clipboard.writeText(code.textContent)
+        copyButton.textContent = 'Copied!'
+        setTimeout(() => { copyButton.textContent = 'Copy code' }, 1500)
+      })
+    })()
+  </script>
+  <script src="https://unpkg.com/idiomorph@0.7.4/dist/idiomorph.min.js"></script>
+  <script src="../batsignal.js"></script>
+</body>
+
+</html>
