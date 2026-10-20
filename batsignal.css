@@ -64,7 +64,8 @@ output {
 }
 
 pre[class*="language-"] {
+  max-height: 70vh;
+  overflow: auto;
   font-size: 0.85rem !important;
   padding: 0 !important;
 }
-

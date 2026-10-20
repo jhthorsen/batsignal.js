@@ -1,0 +1,711 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Chart plugins — batsignal.js</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.amber.min.css">
+  <link rel="stylesheet" href="../batsignal.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.30.0/themes/prism-tomorrow.min.css">
+  <style>
+    [data-line-chart] {
+      margin-block: 2rem;
+      margin-inline: auto;
+      width: 100%;
+      max-width: 48rem;
+      aspect-ratio: 16 / 9;
+      position: relative;
+
+      svg {
+        overflow: visible;
+        display: block;
+        width: 100%;
+        height: 100%;
+      }
+
+      .plot-grid line {
+        stroke: currentColor;
+        opacity: .18;
+      }
+
+      .plot-axis {
+        stroke: currentColor;
+        opacity: .65;
+      }
+
+      .plot-label {
+        fill: currentColor;
+        font: 12px sans-serif;
+      }
+
+      .plot-series circle {
+        cursor: pointer;
+        transform-box: fill-box;
+        transform-origin: center;
+        transition: transform .12s ease;
+      }
+
+      .plot-series circle:hover,
+      .plot-series circle:focus-visible {
+        transform: scale(1.5);
+      }
+    }
+
+    [data-pie-chart] {
+      margin-block: 2rem;
+      margin-inline: auto;
+      max-width: 20rem;
+      width: 100%;
+      aspect-ratio: 1;
+      position: relative;
+
+      svg {
+        overflow: visible;
+        display: block;
+        width: 100%;
+        height: 100%;
+      }
+
+      &.is-doughnut svg {
+        --pie-inner-radius: .55;
+      }
+
+      .pie-slice {
+        stroke: var(--pico-background-color);
+        stroke-width: 2;
+        cursor: pointer;
+        transform-box: fill-box;
+        transform-origin: center;
+        transition: transform .15s ease;
+      }
+
+      .pie-slice:hover,
+      .pie-slice:focus-visible {
+        z-index: 1;
+        transform: scale(1.06);
+      }
+
+      .chart-series {
+        transition: none;
+      }
+    }
+
+    .chart-legends {
+      margin: var(--pico-spacing) 0;
+      display: flex;
+      justify-content: center;
+      gap: var(--pico-spacing);
+      align-items: center;
+      flex-wrap: wrap;
+
+      legend {
+        white-space: nowrap;
+        clip: rect(0, 0, 0, 0);
+        clip-path: inset(50%);
+        position: absolute;
+        pointer-events: none;
+        opacity: 0;
+      }
+
+      label {
+        margin: 0;
+      }
+
+      input {
+
+        &,
+        &:active,
+        &:focus {
+          accent-color: var(--series-color);
+          --pico-border-color: var(--series-color);
+        }
+
+        &:checked,
+        &:checked:active,
+        &:checked:focus {
+          --pico-border-color: var(--series-color);
+          --pico-background-color: var(--series-color);
+          accent-color: var(--series-color);
+        }
+      }
+    }
+
+    .chart-tooltip {
+      background: var(--pico-color);
+      color: var(--pico-background-color);
+      font-size: .8rem;
+      padding: .25rem .5rem;
+      border-radius: .25rem;
+      white-space: nowrap;
+      position: absolute;
+      z-index: 1;
+      pointer-events: none;
+      transform: translate(-50%, -100%);
+      opacity: 0;
+      transition: opacity .3s ease;
+
+      &.is-visible {
+        opacity: 0.9;
+      }
+    }
+
+    .chart-series {
+      transition: opacity .2s ease, visibility 0s linear .2s;
+    }
+
+    .chart-series.is-hidden {
+      opacity: 0;
+      visibility: hidden;
+      pointer-events: none;
+    }
+  </style>
+</head>
+
+<body>
+  <header class="site-header">
+    <p class="site-header__eyebrow">HTML-first interactivity</p>
+    <h1>🦇 batsignal.js</h1>
+    <div class="grid" style="margin:2rem auto;width:20rem"><a href="../index.html" role="button">Home</a><a
+        href="https://github.com/jhthorsen/batsignal.js#readme" role="button" class="secondary">Documentation</a></div>
+  </header>
+  <main class="container">
+    <h1>Chart plugins</h1>
+    <p>Explore both chart plugins below. Each demo uses its own independently copyable plugin script.</p>
+    <section aria-labelledby="line-chart-heading">
+      <h2 id="line-chart-heading">Line chart</h2>
+      <p>Dispatch <code>plot</code> events with a legend and numeric coordinates. The chart range expands to include
+        every point.</p>
+
+      <div on:load="
+        const chart = ctx.chart(el)
+        for (let x = 0; x < 200; x++) {
+          chart.series.get('Moonlight').push({x, y: 15 + Math.sin(x / 17) * 8 + Math.cos(x / 41) * 5})
+          chart.series.get('Batsignal').push({x, y: 25 + Math.sin(x / 17) * 8 + Math.cos(x / 41) * 5})
+        }
+        ctx.dispatch(el, 'plot')
+      " data-line-chart>
+        <svg viewBox="0 0 640 360" data-margin="18 18 18 58" role="img" aria-labelledby="plot-title plot-description">
+          <title id="plot-title">Line chart</title>
+          <desc id="plot-description">Line chart with 200 Moonlight points and 200 Batsignal points. Horizontal values
+            use seconds (s). Vertical values use liters (L).</desc>
+          <g class="plot-grid" aria-hidden="true">
+            <g data-axis="x"></g>
+            <g data-axis="y"></g>
+          </g>
+          <g class="plot-labels">
+            <g data-axis="x">
+              <text class="plot-label" data-format="{value}s"></text>
+              <text class="plot-label" data-format="{value}s"></text>
+              <text class="plot-label" data-format="{value}s"></text>
+              <text class="plot-label" data-format="{value}s"></text>
+              <text class="plot-label" data-format="{value}s"></text>
+            </g>
+            <g data-axis="y">
+              <text class="plot-label" data-format="{value}L"></text>
+              <text class="plot-label" data-format="{value}L"></text>
+              <text class="plot-label" data-format="{value}L"></text>
+              <text class="plot-label" data-format="{value}L"></text>
+              <text class="plot-label" data-format="{value}L"></text>
+            </g>
+          </g>
+          <g class="plot-axes">
+            <line class="plot-axis"></line>
+            <line class="plot-axis"></line>
+          </g>
+          <g class="plot-series"></g>
+        </svg>
+
+        <fieldset class="chart-legends">
+          <legend>Show series</legend>
+          <label style="--series-color: #f5a623"><input type="checkbox" checked> Moonlight</label>
+          <label style="--series-color: #4bc0c0"><input type="checkbox" checked> Batsignal</label>
+        </fieldset>
+
+        <div class="chart-tooltip plot-tooltip" role="status" aria-live="polite" data-template="{legend}: {y}L / {x}s">
+        </div>
+
+        <p>
+          <button type="button" style="--pico-background-color:#f5a623;--pico-border-color:#f5a623" on:load on:click="
+            const values = ctx.chart(el).series.get('Moonlight')
+            const x = values.at(-1)?.x + 1 || 0
+            ctx.dispatch(el, 'plot', {legend: 'Moonlight', x, y: Math.round(Math.random() * 30)}, {bubbles: true})">
+            Add Moonlight point</button>
+
+          <button type="button" style="--pico-background-color:#4bc0c0;--pico-border-color:#4bc0c0;" on:load on:click="
+            const values = ctx.chart(el).series.get('Batsignal')
+            const x = values.at(-1)?.x + 1 || 0
+            ctx.dispatch(el, 'plot', {legend: 'Batsignal', x, y: Math.round(Math.random() * 30)}, {bubbles: true})">
+            Add Batsignal point</button>
+
+          <button type="button" class="secondary" on:load
+            on:click="ctx.dispatch(el.closest('[data-line-chart]'), 'reset')">Clear chart</button>
+        <p>
+      </div>
+    </section>
+
+    <section aria-labelledby="pie-heading">
+      <h2 id="pie-heading">Pie chart</h2>
+      <p>Dispatch <code>pie</code> events with a legend and positive numeric value. Values accumulate into each slice.
+        Toggle doughnut mode with the button.</p>
+
+      <div id="pie_demo" on:load data-pie-chart data-value-suffix="L">
+        <svg viewBox="0 0 360 360" role="img" aria-labelledby="pie-title pie-description">
+          <title id="pie-title">Signal activity</title>
+          <desc id="pie-description">Pie chart showing the accumulated activity for each signal.</desc>
+          <g class="pie-graphics"></g>
+        </svg>
+
+        <fieldset class="chart-legends">
+          <legend>Show series</legend>
+          <label style="--series-color: #f5a623"><input type="checkbox" checked> Moonlight</label>
+          <label style="--series-color: #4bc0c0"><input type="checkbox" checked> Batsignal</label>
+          <label style="--series-color: #a78bfa"><input type="checkbox" checked> Other</label>
+        </fieldset>
+
+        <div class="chart-tooltip pie-tooltip" role="status" aria-live="polite"
+          data-template="{legend}: {value}{suffix} ({percentage}%)"></div>
+      </div>
+
+      <p>
+        <button type="button" style="--pico-background-color:#f5a623;--pico-border-color:#f5a623" on:load="el.click()"
+          on:click="ctx.dispatch($('#pie_demo'), 'plot', {legend: 'Moonlight', value: Math.ceil(Math.random() * 30)})">
+          Random Moonlight</button>
+
+        <button type="button" style="--pico-background-color:#4bc0c0;--pico-border-color:#4bc0c0;" on:load="el.click()"
+          on:click="ctx.dispatch($('#pie_demo'), 'plot', {legend: 'Batsignal', value: Math.ceil(Math.random() * 30)})">
+          Random Batsignal</button>
+
+        <button type="button" style="--pico-background-color:#a78bfa;--pico-border-color:#a78bfa;" on:load="el.click()"
+          on:click="ctx.dispatch($('#pie_demo'), 'plot', {legend: 'Other', value: Math.ceil(Math.random() * 30)})">
+          Random Other</button>
+
+        <button type="button" class="secondary" on:load="el.click()"
+          on:click="$('#pie_demo').classList.toggle('is-doughnut'); ctx.dispatch($('#pie_demo'), 'plot')">
+          Toggle doughnut</button>
+      </p>
+    </section>
+  </main>
+  <script type="text/plain" data-batsignal-plugin="line-chart">
+({
+  charts: new WeakMap(),
+  setup(script, C) {
+    const previousChart = C.chart
+    C.chart = el => {
+      const chart = el.closest('[data-line-chart]')
+      return this.charts.get(chart) ?? (previousChart && previousChart(el))
+    }
+  },
+  init(el, ctx) {
+    if (!el.hasAttribute('data-line-chart')) return
+
+    const legends = [...el.querySelectorAll('.chart-legends label')].map(label => ({
+      name: label.textContent.trim(),
+      color: getComputedStyle(label).getPropertyValue('--series-color').trim(),
+      input: label.querySelector('input[type="checkbox"]'),
+    }))
+
+    const grid = el.querySelector('.plot-grid')
+    for (const axis of ['x', 'y']) {
+      const count = el.querySelector(`.plot-labels [data-axis="${axis}"]`).children.length
+      const group = grid.querySelector(`[data-axis="${axis}"]`)
+      for (let i = 0; i < count; i++) group.appendChild(document.createElementNS('http://www.w3.org/2000/svg', 'line'))
+    }
+
+    const domain = {minX: 0, maxX: 10, minY: 0, maxY: 10}
+    const observer = new ResizeObserver(() => {
+      el.querySelector('.plot-tooltip').classList.remove('is-visible')
+      this.draw(el)
+    })
+
+    this.charts.set(el, Object.assign(this.charts.get(el) || {}, {
+      domain: Object.assign({}, domain),
+      legends,
+      observer,
+      series: new Map(legends.map(({name}) => [name, []])),
+      seriesNodes: new Map(legends.map(({name}) => [name, {path: null, points: new Map(), order: []}])),
+      visibility: new Map(legends.map(({name, input}) => [name, input.checked])),
+    }))
+
+    observer.observe(el)
+    ctx.signal.addEventListener('abort', () => observer.disconnect(), {once: true})
+
+    ctx.listen(el, 'change', event => {
+      const label = event.target.closest('.chart-legends label')
+      if (!label || !el.contains(label)) return
+      const legend = label.textContent.trim()
+      const checkbox = label.querySelector('input[type="checkbox"]')
+      this.charts.get(el).visibility.set(legend, checkbox.checked)
+      el.querySelector('.plot-tooltip').classList.remove('is-visible')
+      this.draw(el)
+    })
+
+    ctx.listen(el, 'plot', event => {
+      const detail = event.detail ?? {}
+      const [x, y] = [Number(event.detail.x), Number(event.detail.y)]
+      if (detail.legend != null && Number.isFinite(x) && Number.isFinite(y)) {
+        const values = this.charts.get(el).series.get(String(detail.legend))
+        if (values) values.push({x, y})
+      }
+      this.draw(el)
+    })
+
+    ctx.listen(el, 'reset', () => {
+      const chart = this.charts.get(el)
+      for (const values of chart.series.values()) values.length = 0
+      Object.assign(chart.domain, domain)
+      this.draw(el)
+    })
+
+    this.draw(el)
+  },
+  draw(el) {
+    const {series, domain} = this.charts.get(el)
+    const points = [...series.values()].flat()
+    for (const point of points) {
+      if (point.x < domain.minX) domain.minX = Math.floor(point.x / 10) * 10
+      if (point.x > domain.maxX) domain.maxX = Math.ceil(point.x / 10) * 10 || 10
+      if (point.y < domain.minY) domain.minY = Math.floor(point.y / 10) * 10
+      if (point.y > domain.maxY) domain.maxY = Math.ceil(point.y / 10) * 10 || 10
+    }
+
+    if (domain.minX === domain.maxX) domain.maxX = domain.minX + 10
+    if (domain.minY === domain.maxY) domain.maxY = domain.minY + 10
+
+    const svg = el.querySelector('svg')
+    const [top, right, bottom, left] = svg.dataset.margin.split(/\s+/).map(Number)
+    const {width, height} = svg.viewBox.baseVal
+    const plotWidth = width - left - right, plotHeight = height - top - bottom
+    const layout = {
+      width, height, top, right, bottom, left, plotWidth, plotHeight,
+      x: value => left + (value - domain.minX) / (domain.maxX - domain.minX) * plotWidth,
+      y: value => top + (domain.maxY - value) / (domain.maxY - domain.minY) * plotHeight,
+    }
+
+    this.drawGrid(el, layout, domain)
+    this.drawAxes(el, layout)
+    this.drawSeries(el, layout)
+  },
+  drawAxes(el, {width, height, top, right, bottom, left}) {
+    const axes = el.querySelector('.plot-axes')
+    const update = (node, attrs) => {
+      for (const [key, value] of Object.entries(attrs)) {
+        if (node.getAttribute(key) !== String(value)) node.setAttribute(key, value)
+      }
+    }
+    const vertical = axes.children[0]
+    update(vertical, {x1: left, x2: left, y1: top, y2: height - bottom, class: 'plot-axis'})
+    const horizontal = axes.children[1]
+    update(horizontal, {x1: left, x2: width - right, y1: height - bottom, y2: height - bottom, class: 'plot-axis'})
+  },
+  drawGrid(el, {width, height, top, right, bottom, left, x, y}, {minX, maxX, minY, maxY}) {
+    const labels = el.querySelector('.plot-labels')
+    const update = (node, attrs) => {
+      for (const [key, value] of Object.entries(attrs)) {
+        if (node.getAttribute(key) !== String(value)) node.setAttribute(key, value)
+      }
+    }
+    for (const [axis, min, max, calcPos] of [
+      ['x', minX, maxX, x],
+      ['y', minY, maxY, y],
+    ]) {
+      const gridLines = el.querySelector(`.plot-grid [data-axis="${axis}"]`).children
+      const axisLabels = labels.querySelector(`[data-axis="${axis}"]`).children
+      const count = Math.min(gridLines.length, axisLabels.length)
+      for (let i = 0; i < count; i++) {
+        const value = min + (max - min) * (count === 1 ? 0.5 : i / (count - 1))
+        const pos = calcPos(value)
+        const line = gridLines[i]
+        const label = axisLabels[i]
+        update(line, axis === 'x'
+          ? {x1: pos, x2: pos, y1: top, y2: height - bottom, class: 'plot-grid'}
+          : {x1: left, x2: width - right, y1: pos, y2: pos, class: 'plot-grid'})
+        update(label, axis === 'x'
+          ? {x: pos, y: height - bottom + 20, 'text-anchor': 'middle', class: 'plot-label'}
+          : {x: left - 8, y: pos + 4, 'text-anchor': 'end', class: 'plot-label'})
+        const number = Number(value.toPrecision(3))
+        const text = label.dataset.format?.replaceAll('{value}', number) ?? String(number)
+        if (label.textContent !== text) label.textContent = text
+      }
+    }
+  },
+  drawSeries(el, {x, y}) {
+    const {legends, series, seriesNodes, visibility} = this.charts.get(el)
+    const graphics = el.querySelector('.plot-series')
+    const tooltip = el.querySelector('.plot-tooltip')
+    for (const {name: legend, color} of legends) {
+      let group = [...graphics.children].find(node => node.dataset.legend === legend)
+      if (!group) {
+        group = document.createElementNS('http://www.w3.org/2000/svg', 'g')
+        group.dataset.legend = legend
+        group.classList.add('chart-series')
+        graphics.append(group)
+      }
+      group.classList.toggle('is-hidden', !visibility.get(legend))
+      const nodes = seriesNodes.get(legend)
+      const values = series.get(legend)
+      const sorted = [...values].sort((a, b) => a.x - b.x)
+      const livePoints = new Set(values)
+
+      for (const [point, circle] of nodes.points) {
+        if (!livePoints.has(point)) {
+          circle.remove()
+          nodes.points.delete(point)
+        }
+      }
+
+      if (sorted.length > 1) {
+        const path = sorted.map((point, i) => `${i ? 'L' : 'M'}${x(point.x)},${y(point.y)}`).join(' ')
+        if (!nodes.path) {
+          nodes.path = document.createElementNS('http://www.w3.org/2000/svg', 'path')
+          group.insertBefore(nodes.path, group.firstChild)
+        }
+        const attrs = {d: path, fill: 'none', stroke: color, 'stroke-width': 2.5, 'stroke-linejoin': 'round', 'stroke-linecap': 'round'}
+        for (const [key, value] of Object.entries(attrs)) {
+          if (nodes.path.getAttribute(key) !== String(value)) nodes.path.setAttribute(key, value)
+        }
+      } else if (nodes.path) {
+        nodes.path.remove()
+        nodes.path = null
+      }
+
+      for (const point of sorted) {
+        const label = `${legend}: ${point.x}, ${point.y}`
+        let circle = nodes.points.get(point)
+        if (!circle) {
+          circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle')
+          const title = document.createElementNS('http://www.w3.org/2000/svg', 'title')
+          circle.append(title)
+          circle.onpointerenter = () => this.showTooltip(el, circle, legend, point)
+          circle.onpointerleave = () => tooltip.classList.remove('is-visible')
+          circle.onfocus = () => this.showTooltip(el, circle, legend, point)
+          circle.onblur = () => tooltip.classList.remove('is-visible')
+          nodes.points.set(point, circle)
+        }
+        const attrs = {cx: x(point.x), cy: y(point.y), r: 4, fill: color, tabindex: 0, role: 'img', 'aria-label': label}
+        for (const [key, value] of Object.entries(attrs)) {
+          if (circle.getAttribute(key) !== String(value)) circle.setAttribute(key, value)
+        }
+        const title = circle.firstElementChild
+        if (title.textContent !== label) title.textContent = label
+        if (!circle.parentNode) group.append(circle)
+      }
+
+      const extendsOrder = nodes.order.length <= sorted.length && nodes.order.every((point, i) => sorted[i] === point)
+      if (!extendsOrder) for (const point of sorted) group.append(nodes.points.get(point))
+      nodes.order = sorted
+    }
+  },
+  showTooltip(el, circle, legend, point) {
+    const tooltip = el.querySelector('.plot-tooltip')
+    const tooltipFormat = tooltip.dataset.template || '{legend}: {x}, {y}'
+    const values = {
+      legend,
+      x: Number(point.x.toPrecision(3)),
+      y: Number(point.y.toPrecision(3)),
+    }
+    tooltip.textContent = tooltipFormat.replace(/\{(legend|x|y)\}/g, (_, key) => values[key])
+
+    const chartRect = el.getBoundingClientRect()
+    const pointRect = circle.getBoundingClientRect()
+    tooltip.style.left = `${pointRect.left + pointRect.width / 2 - chartRect.left}px`
+    tooltip.style.top = `${pointRect.top - chartRect.top}px`
+    tooltip.classList.add('is-visible')
+  },
+})
+  </script>
+  <script type="text/plain" data-batsignal-plugin="pie">
+({
+  charts: new WeakMap(),
+  setup(script, C) {
+    const previousChart = C.chart
+    C.chart = el => {
+      const chart = el.closest('[data-pie-chart]')
+      return this.charts.get(chart) ?? (previousChart && previousChart(el))
+    }
+  },
+  init(el, ctx) {
+    if (!el.hasAttribute('data-pie-chart')) return
+
+    const legends = [...el.querySelectorAll('.chart-legends label')].map(label => ({
+      name: label.textContent.trim(),
+      color: getComputedStyle(label).getPropertyValue('--series-color').trim(),
+      input: label.querySelector('input[type="checkbox"]'),
+    }))
+
+    const graphics = el.querySelector('.pie-graphics')
+    const seriesNodes = new Map(legends.map(({name}) => {
+      const group = document.createElementNS('http://www.w3.org/2000/svg', 'g')
+      group.dataset.legend = name
+      group.classList.add('chart-series')
+      const path = document.createElementNS('http://www.w3.org/2000/svg', 'path')
+      path.classList.add('pie-slice')
+      path.setAttribute('tabindex', '0')
+      path.setAttribute('role', 'img')
+      const title = document.createElementNS('http://www.w3.org/2000/svg', 'title')
+      path.append(title)
+      group.append(path)
+      graphics.append(group)
+      return [name, {group, path, title}]
+    }))
+    const empty = document.createElementNS('http://www.w3.org/2000/svg', 'circle')
+    empty.setAttribute('display', 'none')
+    graphics.append(empty)
+
+    const observer = new ResizeObserver(() => {
+      el.querySelector('.pie-tooltip').classList.remove('is-visible')
+      this.draw(el)
+    })
+
+    this.charts.set(el, Object.assign(this.charts.get(el) || {}, {
+      legends,
+      observer,
+      seriesNodes,
+      empty,
+      values: new Map(legends.map(({name}) => [name, 0])),
+      visibility: new Map(legends.map(({name, input}) => [name, input.checked])),
+    }))
+
+    const tooltip = el.querySelector('.pie-tooltip')
+    for (const [name, {path}] of seriesNodes) {
+      const show = () => this.showTooltip(el, path, name, this.charts.get(el).values.get(name))
+      path.onpointerenter = show
+      path.onpointerleave = () => tooltip.classList.remove('is-visible')
+      path.onfocus = show
+      path.onblur = () => tooltip.classList.remove('is-visible')
+    }
+
+    observer.observe(el)
+    ctx.signal.addEventListener('abort', () => observer.disconnect(), {once: true})
+
+    const svg = el.querySelector('svg')
+    const styleObserver = new MutationObserver(() => this.draw(el))
+    styleObserver.observe(svg, {attributes: true, attributeFilter: ['class', 'style']})
+    ctx.signal.addEventListener('abort', () => styleObserver.disconnect(), {once: true})
+
+    ctx.listen(el, 'change', event => {
+      const label = event.target.closest('.chart-legends label')
+      if (!label || !el.contains(label)) return
+      const legend = label.textContent.trim()
+      const checkbox = label.querySelector('input[type="checkbox"]')
+      this.charts.get(el).visibility.set(legend, checkbox.checked)
+      el.querySelector('.pie-tooltip').classList.remove('is-visible')
+      this.draw(el)
+    })
+
+    ctx.listen(el, 'plot', event => {
+      const {legend, value} = event.detail ?? {}
+      const val = Number(value)
+      if (legend != null && Number.isFinite(val)) {
+        const values = this.charts.get(el).values
+        if (values) values.set(String(legend), val)
+      }
+      this.draw(el)
+    })
+
+    this.draw(el)
+  },
+  draw(el) {
+    const svg = el.querySelector('svg')
+    const {legends, values, visibility, seriesNodes, empty} = this.charts.get(el)
+    const {width, height} = svg.viewBox.baseVal
+    const cx = width / 2, cy = height / 2
+    const radius = Math.min(width, height) * .46
+    const visibleLegends = legends.filter(({name}) => visibility.get(name))
+    const total = visibleLegends.reduce((sum, {name}) => sum + values.get(name), 0)
+    const update = (node, attrs) => {
+      for (const [key, value] of Object.entries(attrs)) {
+        if (node.getAttribute(key) !== String(value)) node.setAttribute(key, value)
+      }
+    }
+    update(empty, {cx, cy, r: radius, fill: 'none', stroke: 'currentColor', 'stroke-dasharray': '4 6', opacity: '.4', display: total ? 'none' : 'inline'})
+
+    if (!total) {
+      for (const {group, path} of seriesNodes.values()) {
+        group.classList.toggle('is-hidden', !visibility.get(group.dataset.legend))
+        update(path, {display: 'none'})
+      }
+      return
+    }
+
+    const innerRadius = radius * Math.max(0, Math.min(0.9, parseFloat(getComputedStyle(svg).getPropertyValue('--pie-inner-radius')) || 0))
+    let angle = -Math.PI / 2
+    for (const {name, color} of legends) {
+      const {group, path, title} = seriesNodes.get(name)
+      const isVisible = visibility.get(name)
+      group.classList.toggle('is-hidden', !isVisible)
+      const value = values.get(name)
+      if (!isVisible) continue
+      if (!value) {
+        update(path, {display: 'none'})
+        continue
+      }
+      const start = angle
+      angle += value / total * Math.PI * 2
+      const end = angle
+      const x1 = cx + radius * Math.cos(start), y1 = cy + radius * Math.sin(start)
+      const x2 = cx + radius * Math.cos(end), y2 = cy + radius * Math.sin(end)
+      const largeArc = end - start > Math.PI ? 1 : 0
+      const label = `${name}: ${Number(value.toPrecision(3))}${el.dataset.valueSuffix ?? ''} (${(value / total * 100).toFixed(1)}%)`
+      const fullCircle = end - start >= Math.PI * 2 - 1e-10
+      const pathData = fullCircle
+        ? innerRadius
+          ? `M ${cx} ${cy - radius} A ${radius} ${radius} 0 1 1 ${cx} ${cy + radius} A ${radius} ${radius} 0 1 1 ${cx} ${cy - radius} M ${cx} ${cy - innerRadius} A ${innerRadius} ${innerRadius} 0 1 0 ${cx} ${cy + innerRadius} A ${innerRadius} ${innerRadius} 0 1 0 ${cx} ${cy - innerRadius} Z`
+          : `M ${cx} ${cy - radius} A ${radius} ${radius} 0 1 1 ${cx} ${cy + radius} A ${radius} ${radius} 0 1 1 ${cx} ${cy - radius} Z`
+        : innerRadius
+          ? `M ${x1} ${y1} A ${radius} ${radius} 0 ${largeArc} 1 ${x2} ${y2} L ${cx + innerRadius * Math.cos(end)} ${cy + innerRadius * Math.sin(end)} A ${innerRadius} ${innerRadius} 0 ${largeArc} 0 ${cx + innerRadius * Math.cos(start)} ${cy + innerRadius * Math.sin(start)} Z`
+          : `M ${cx} ${cy} L ${x1} ${y1} A ${radius} ${radius} 0 ${largeArc} 1 ${x2} ${y2} Z`
+      update(path, {d: pathData, fill: color, class: 'pie-slice', tabindex: '0', role: 'img', 'aria-label': label, display: 'inline'})
+      if (title.textContent !== label) title.textContent = label
+    }
+  },
+  showTooltip(el, slice, legend, value) {
+    const tooltip = el.querySelector('.pie-tooltip')
+    const {legends, values, visibility} = this.charts.get(el)
+    const total = legends.reduce((sum, {name}) => visibility.get(name) ? sum + values.get(name) : sum, 0)
+    const template = tooltip.dataset.template || '{legend}: {value}{suffix} ({percentage}%)'
+    const text = template.replace(/\{(legend|value|suffix|percentage)\}/g, (_, key) => ({
+      legend,
+      value: Number(value.toPrecision(3)),
+      suffix: el.dataset.valueSuffix ?? '',
+      percentage: total ? (value / total * 100).toFixed(1) : '0.0',
+    })[key])
+    tooltip.textContent = text
+    const chartRect = el.getBoundingClientRect()
+    const sliceRect = slice.getBoundingClientRect()
+    tooltip.style.left = `${sliceRect.left + sliceRect.width / 2 - chartRect.left}px`
+    tooltip.style.top = `${sliceRect.top + sliceRect.height / 2 - chartRect.top}px`
+    tooltip.classList.add('is-visible')
+  },
+})
+  </script>
+  <section class="container">
+    <h2>Line chart plugin code</h2>
+    <pre><code class="language-markup" data-plugin-code="line-chart"></code></pre><button type="button"
+      class="copy-plugin-code" data-plugin-copy="line-chart">Copy line plugin</button>
+  </section>
+  <section class="container">
+    <h2>Pie chart plugin code</h2>
+    <pre><code class="language-markup" data-plugin-code="pie"></code></pre><button type="button"
+      class="copy-plugin-code" data-plugin-copy="pie">Copy pie plugin</button>
+  </section>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.30.0/prism.min.js"></script>
+  <script>
+    document.querySelectorAll('[data-plugin-code]').forEach(code => {
+      const name = code.dataset.pluginCode
+      code.textContent = document.querySelector(`[data-batsignal-plugin="${name}"]`).outerHTML
+      Prism.highlightElement(code)
+    })
+    document.querySelectorAll('[data-plugin-copy]').forEach(button => button.addEventListener('click', async () => {
+      const code = document.querySelector(`[data-plugin-code="${button.dataset.pluginCopy}"]`)
+      await navigator.clipboard.writeText(code.textContent)
+      const original = button.textContent
+      button.textContent = 'Copied!'
+      setTimeout(() => {button.textContent = original}, 1500)
+    }))
+  </script>
+  <script src="https://unpkg.com/idiomorph@0.7.4/dist/idiomorph.min.js"></script>
+  <script src="../batsignal.js"></script>
+</body>
+
+</html>

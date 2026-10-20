@@ -138,6 +138,7 @@ Attribute handlers receive `el` (the element), `evt` (the event), and `ctx`.
 | `ctx.fetch(url, options)` | Fetches `url` for `el` and handles the response as described below. |
 | `ctx.listen(target, name, callback, options)` | Adds a listener using the element lifecycle signal by default. |
 | `ctx.dispatch(target, name, detail, options)` | Dispatches a `CustomEvent` on `target`. |
+| Chart plugin: `ctx.chart(target)` | Returns the same mutable chart state object for `target` across chart handlers and plugins. |
 | `ctx.init(root)` | Initializes `root` and its descendants that have `on:load`. |
 | `ctx.signal` | Aborts when batsignal removes or replaces `el`. |
 
