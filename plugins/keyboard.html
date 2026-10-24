@@ -37,17 +37,16 @@
   <main class="container">
     <h1>Keyboard shortcut plugin</h1>
     <p>
-      This plugin adds <code>kbd:down|key|modifier</code> and
-      <code>kbd:up|key|modifier</code> attributes. The first token selects the
-      keyboard phase, the second matches <code>KeyboardEvent.key</code>, and
-      the remaining tokens specify exact modifiers (<code>ctrl</code>,
-      <code>alt</code>, <code>shift</code>, or <code>meta</code>).
+      This plugin maps keys to named functions with
+      <code>data-kbd="h,ArrowLeft:somefunction; Escape:otherfunction"</code>.
+      Separate keys with commas and mappings with semicolons. Prefix a key
+      with modifiers such as <code>Ctrl+</code>, <code>Alt+</code>,
+      <code>Shift+</code>, or <code>Meta+</code> (for example,
+      <code>Ctrl+h:somefunction</code>).
     </p>
 
-    <output id="keyboard-status" on:load
-      kbd:down|k|ctrl="evt.preventDefault(); el.textContent = 'Ctrl+K pressed — keydown received.'"
-      kbd:up|k|ctrl="el.textContent = 'Ctrl+K released — keyup received.'">
-      Press and release Ctrl+K to see the global key events.
+    <output id="keyboard-status" on:load data-kbd="Ctrl+h,Ctrl+ArrowLeft:showKey; Escape:clearKey">
+      Press Ctrl+H, Ctrl+ArrowLeft, or Escape to see the global key events.
     </output>
 
     <p>
@@ -60,24 +59,36 @@
   <script type="text/plain" data-batsignal-plugin="keyboard">
 ({
   init(el, ctx) {
-    for (const attr of el.attributes) {
-      const [phase, key, ...modifiers] = attr.name.startsWith('kbd:') ? attr.name.slice(4).split('|') : []
-      if (!key || !['down', 'up'].includes(phase)) continue
-
-      ctx.listen(window, `key${phase}`, evt => {
-        const target = evt.target
-        if (target.matches?.('input, textarea, select') || target.isContentEditable) return
-        if (evt.key !== key || evt.repeat) return
-        if (evt.ctrlKey !== modifiers.includes('ctrl') ||
-            evt.altKey !== modifiers.includes('alt') ||
-            evt.shiftKey !== modifiers.includes('shift') ||
-            evt.metaKey !== modifiers.includes('meta')) return
-
-        new Function('el', 'evt', 'ctx', attr.value)(el, evt, ctx)
-      })
+    const mappings = new Map()
+    for (const entry of (el.getAttribute('data-kbd') || '').split(';')) {
+      const [keys, handler] = entry.split(':').map(part => part.trim())
+      if (!keys || !handler) continue
+      for (const shortcut of keys.split(',').map(key => key.trim()).filter(Boolean)) {
+        const parts = shortcut.toLowerCase().split('+')
+        const key = parts.pop()
+        mappings.set(key, { handler, ctrl: parts.includes('ctrl'), alt: parts.includes('alt'), shift: parts.includes('shift'), meta: parts.includes('meta') })
+      }
     }
+    if (!mappings.size) return
+
+    ctx.listen(window, 'keydown', evt => {
+      const target = evt.target
+      if (target.matches?.('input, textarea, select') || target.isContentEditable || evt.repeat) return
+      const mapping = mappings.get(evt.key.toLowerCase())
+      if (mapping && evt.ctrlKey === mapping.ctrl && evt.altKey === mapping.alt && evt.shiftKey === mapping.shift && evt.metaKey === mapping.meta && typeof window[mapping.handler] === 'function') window[mapping.handler](evt, el, ctx)
+    })
   },
 })
+  </script>
+  <script>
+    function showKey(evt, el) {
+      evt.preventDefault()
+      el.textContent = `${evt.key} pressed.`
+    }
+
+    function clearKey(evt, el) {
+      el.textContent = 'Press Ctrl+H, Ctrl+ArrowLeft, or Escape to see the global key events.'
+    }
   </script>
   <section class="container">
     <h2>Plugin code</h2>
@@ -86,13 +97,14 @@
   </section>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.30.0/prism.min.js"></script>
   <script>
-    (() => {const code = document.querySelector('#plugin-code'); code.textContent = document.querySelector('script[data-batsignal-plugin]').outerHTML; Prism.highlightElement(code)
-    const copyButton = document.querySelector('.copy-plugin-code')
-    copyButton.addEventListener('click', async () => {
-      await navigator.clipboard.writeText(code.textContent)
-      copyButton.textContent = 'Copied!'
-      setTimeout(() => { copyButton.textContent = 'Copy code' }, 1500)
-    })
+    (() => {
+      const code = document.querySelector('#plugin-code'); code.textContent = document.querySelector('script[data-batsignal-plugin]').outerHTML; Prism.highlightElement(code)
+      const copyButton = document.querySelector('.copy-plugin-code')
+      copyButton.addEventListener('click', async () => {
+        await navigator.clipboard.writeText(code.textContent)
+        copyButton.textContent = 'Copied!'
+        setTimeout(() => {copyButton.textContent = 'Copy code'}, 1500)
+      })
 
     })()
   </script>
