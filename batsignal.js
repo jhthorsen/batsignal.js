@@ -1,5 +1,7 @@
 ;(function ($w, $d, H, L) {
   'use strict';
+  if ($d.documentElement.classList.contains('batsignal')) return
+
   // $w: window, $d: document, H: history, L: location URL, S: private node state
   const S = new WeakMap(), N = new Set(), P = new WeakMap(), C = {}
   S.set($w, {ac: new AbortController(), req: new Set()})
@@ -368,4 +370,5 @@
   })
 
   init()
+  $d.documentElement.classList.add('batsignal')
 })(window, document, history, new URL(location.href))
