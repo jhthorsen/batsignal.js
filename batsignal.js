@@ -23,9 +23,10 @@
    * The compiled function receives: el (target node), evt (event object),
    * and ctx (batsignal helpers bound to el).
    *
-   * @param {Node} el - The target DOM node.
+   * @param {Element} el - The target DOM element.
    * @param {string} body - JavaScript code string to compile.
-   * @returns {Function} A function that takes an event and executes the compiled code.
+   * @returns {import('./batsignal.types.js').BatsignalCompiledHandler|undefined}
+   *   A bound handler, or undefined if compilation fails.
    */
   function compile(el, body) {
     try {
@@ -36,6 +37,11 @@
     }
   }
 
+  /**
+   * Creates the context passed to plugin init hooks and attribute handlers.
+   * @param {Node} el - The owning DOM node.
+   * @returns {import('./batsignal.types.js').BatsignalContext}
+   */
   function context(el) {
     const signal = S.get(el)?.ac.signal
     return {
@@ -50,22 +56,18 @@
 
   /**
    * Dispatches a custom event on a given node.
-   * @param {Node} el - The target DOM node
-   * @param {string} name - The event name (emitted as 'sse-{eventName}').
-   * @param {Object} [detail={}] - Detail for CustomEvent
-   * @param {Object} [opt={}] - Additional CustomEvent options (e.g. bubbles).
-   * @returns {void}
+   * @param {EventTarget} el - The target DOM node or window.
+   * @param {string} name - The event name, used as-is.
+   * @param {unknown} [detail] - Detail for CustomEvent (defaults to {}).
+   * @param {CustomEventInit<unknown>} [opt={}] - Additional CustomEvent options.
+   * @returns {boolean} False if a cancelable event was canceled.
    */
   const dispatch = (el, name, detail = {}, opt = {}) =>
     el.dispatchEvent(new CustomEvent(name, {bubbles: false, ...opt, detail}))
 
   /**
-   * Listen
-   * @param {Node} el - The target DOM node
-   * @param {string} name - The event name
-   * @param {Function} cb - Callback for event listener
-   * @param {Object} [opt={}] - Additional options (e.g. once).
-   * @returns {void}
+   * Listen using the target's cleanup signal unless an explicit signal is supplied.
+   * @type {import('./batsignal.types.js').BatsignalListen}
    */
   const listen = (el, name, cb, opt = {}) =>
     el.addEventListener(name, cb, opt.signal ? opt : {...opt, signal: S.get(el).ac.signal})
@@ -77,7 +79,7 @@
    *
    * @param {Node} el - The target DOM node (for cleanup tracking).
    * @param {string} url - A relative or absolute URL to fetch.
-   * @param {Object} [opt={}] - Fetch options (method, headers, body, search, navigation, etc).
+   * @param {import('./batsignal.types.js').BatsignalFetchOptions} [opt={}] - Request options.
    *   The 'signal' option is managed internally and will be overridden.
    * @returns {Promise<Response|null>} - The fetch Response, or null on error.
    *
@@ -168,7 +170,7 @@
     }
   }
 
-  /*
+  /**
    * Initializes event listeners on all elements with batsignal attributes.
    * Called automatically on page load and after patching with sse-patch-elements.
    *
@@ -180,12 +182,17 @@
    *   on:{event}    - Executes code on any DOM event
    *
    * Each element is initialized only once (tracked in private WeakMap state).
+   * @param {Document|Element|DocumentFragment} [root=document] - Root to initialize.
+   * @returns {void}
    */
   function init(root = $d) {
     const $plugins = $d.querySelectorAll('script[type="text/plain"][data-batsignal-plugin]')
     for (const $p of $plugins) {
       try {
         if (P.has($p)) continue
+        /**
+         * @type {import('./batsignal.types.js').BatsignalPlugin}
+         */
         const plugin = new Function('return (' + $p.textContent + ')')()
         P.set($p, plugin)
         if (typeof plugin.setup == 'function') plugin.setup.call(plugin, $p, C)

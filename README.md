@@ -175,6 +175,97 @@ like `document.querySelector()`:
 <output id="status"></output>
 ```
 
+### Using types in external libraries
+
+[batsignal.types.js](batsignal.types.js) provides reusable JSDoc types for
+`BatsignalContext`, `BatsignalFetchOptions`, `BatsignalPlugin`, `BatsignalHelpers`,
+`BatsignalHandler`, and event details. All exported types use the `Batsignal` prefix.
+Copy this file into your library (for example, `vendor/batsignal.types.js`),
+then import its types **inside JSDoc comments** using a relative local path:
+
+```js
+// @ts-check
+/** @typedef {import('./vendor/batsignal.types.js').BatsignalContext} BatsignalContext */
+
+/**
+ * @param {HTMLElement} el
+ * @param {BatsignalContext} ctx
+ */
+function initializeWidget(el, ctx) {
+  ctx.listen(el, 'click', () => ctx.fetch('/widget', {
+    search: {expanded: true},
+  }))
+}
+```
+
+These imports provide autocomplete in JavaScript editors; `// @ts-check` also
+enables type checking in editors that support TypeScript. They do not load or
+execute either JavaScript file. Do not add a runtime import or a `<script>` tag
+for the types module. Keep using the normal batsignal script for browser behavior.
+Use a local file path, not a CDN URL, for type resolution.
+
+For functions called from attributes such as `on:click="handleClick(el, evt, ctx)"`,
+use `BatsignalHandler`, or annotate the parameters individually. The `evt` parameter can
+be undefined for `on:load` and the initial `on:value` call. `ctx.signal` is present
+for initialized elements, but can be undefined in code evaluated for an
+uninitialized node, such as `fetch-headers`.
+
+Pass your own helper types as a generic argument when a plugin extends `ctx`:
+
+```js
+/** @typedef {{copy: (text: string) => Promise<void>}} ClipboardHelpers */
+/** @typedef {import('./vendor/batsignal.types.js').BatsignalContext<ClipboardHelpers>} ClipboardContext */
+
+/** @satisfies {import('./vendor/batsignal.types.js').BatsignalPlugin<ClipboardHelpers>} */
+const clipboardPlugin = {
+  setup(script, helpers) {
+    helpers.copy = text => navigator.clipboard.writeText(text)
+  },
+  init(el, ctx) {
+    ctx.listen(el, 'click', () => ctx.copy(el.textContent ?? ''))
+  },
+}
+```
+
+This describes the plugin object; register it through the inert plugin script
+mechanism described above. Helpers in `setup` are optional until registered;
+only include helpers your integration requires in the context extension.
+Built-in helper names always take precedence over plugin-defined names.
+For plugins with their own state or methods, intersect the plugin type with
+your state type, for example `BatsignalPlugin<ClipboardHelpers> & {initialized: number}`.
+
+`ctx.listen` infers standard DOM events and built-in batsignal event details.
+Annotate callbacks for application-specific events explicitly:
+
+```js
+/** @param {CustomEvent<{message: string}>} evt */
+function showMessage(evt) {
+  console.log(evt.detail.message)
+}
+// Inside a function receiving ctx:
+// ctx.listen(document, 'app-message', showMessage)
+```
+
+Use `CustomEvent<import('./vendor/batsignal.types.js').BatsignalResponseDataDetail>` for
+custom `sse-*` events. `BatsignalFetchEventDetail` describes the request-start,
+response, and error variants of the `fetch` event; `BatsignalResponseDataDetail` and
+`BatsignalUnknownResponseDetail` describe response payloads.
+
+### Checking the types
+
+With Node.js and TypeScript installed, run the integration type checks and
+editor regression tests from the repository root:
+
+```sh
+tsc --allowJs --checkJs --noEmit --strict --target ES2022 --module ESNext --lib ES2022,DOM tests/types.js
+NODE_PATH="$(npm root -g)" node --test tests/type-completions.cjs
+```
+
+The `NODE_PATH` setting lets Node find a globally installed TypeScript module;
+it can be omitted when TypeScript is installed locally. The editor tests check
+that context helpers appear as methods, `signal` remains a field, and both
+`listen` overloads are available for plain and plugin-extended contexts.
+
 ## Requests and responses
 
 Links and forms targeting the same origin are intercepted. A form without an
